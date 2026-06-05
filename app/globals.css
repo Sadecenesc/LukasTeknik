@@ -1,0 +1,203 @@
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Hanken+Grotesk:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Brand */
+  --brand:        #5f9e34;
+  --brand-600:    #538c2c;
+  --brand-700:    #41711f;
+  --brand-deep:   #294a14;
+  --brand-tint:   #eef5e6;
+  --brand-tint-2: #e2efd4;
+
+  /* Ink / neutrals */
+  --ink:        #15181c;
+  --ink-2:      #2b3138;
+  --ink-soft:   #5a626b;
+  --ink-faint:  #8b929a;
+  --bg:         #ffffff;
+  --bg-soft:    #f6f8f3;
+  --bg-soft-2:  #eef1ea;
+  --line:       #e5e9e0;
+  --line-2:     #d7dcd0;
+
+  /* Accent */
+  --ember:      #d2542b;
+  --ember-tint: #fbe9e2;
+  --steel:      #3a6ea5;
+  --steel-tint: #e6eef7;
+
+  /* Typography */
+  --font-display: 'Sora', system-ui, sans-serif;
+  --font-body: 'Hanken Grotesk', system-ui, sans-serif;
+
+  /* Radii & shadow */
+  --r-sm: 8px;
+  --r:    14px;
+  --r-lg: 22px;
+  --r-pill: 999px;
+  --shadow-sm: 0 1px 2px rgba(21,24,28,.06), 0 2px 6px rgba(21,24,28,.04);
+  --shadow:    0 6px 24px rgba(21,24,28,.08), 0 2px 6px rgba(21,24,28,.04);
+  --shadow-md: 0 12px 40px rgba(21,24,28,.12), 0 4px 10px rgba(21,24,28,.05);
+  --shadow-lg: 0 24px 60px rgba(21,24,28,.14), 0 6px 16px rgba(21,24,28,.06);
+
+  --maxw: 1200px;
+  --nav-h: 76px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--ink);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- Shared layout ---- */
+.container {
+  width: 100%;
+  max-width: var(--maxw);
+  margin-inline: auto;
+  padding-inline: 24px;
+}
+
+/* ---- Buttons ---- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 26px;
+  border-radius: var(--r-pill);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all .2s;
+  border: none;
+  text-decoration: none;
+}
+
+.btn-primary {
+  background: var(--brand);
+  color: #fff;
+}
+.btn-primary:hover {
+  background: var(--brand-600);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--ink);
+  border: 1.5px solid var(--line-2);
+}
+.btn-outline:hover {
+  border-color: var(--ink-soft);
+  background: var(--bg-soft);
+}
+
+/* ---- Section labels ---- */
+.section-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 12.5px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--brand-700);
+  background: var(--brand-tint);
+  padding: 6px 14px;
+  border-radius: var(--r-pill);
+  margin-bottom: 20px;
+}
+
+/* ---- Card ---- */
+.card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow .2s, transform .2s;
+}
+.card:hover {
+  box-shadow: var(--shadow);
+  transform: translateY(-2px);
+}
+
+/* ---- Nav ---- */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  height: var(--nav-h);
+  background: rgba(255,255,255,.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+}
+
+.nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: var(--maxw);
+  margin-inline: auto;
+  padding-inline: 24px;
+}
+
+/* ---- Footer ---- */
+.footer {
+  background: var(--ink);
+  color: rgba(255,255,255,.6);
+  padding: 60px 0 32px;
+}
+
+.footer-brand {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 22px;
+  color: #fff;
+}
+
+/* ---- Section spacing ---- */
+.section {
+  padding: 96px 0;
+}
+
+.section-sm {
+  padding: 64px 0;
+}
+
+/* ---- Headings ---- */
+.h1 { font-family: var(--font-display); font-weight: 800; letter-spacing: -.03em; }
+.h2 { font-family: var(--font-display); font-weight: 700; font-size: clamp(28px, 4vw, 42px); letter-spacing: -.025em; }
+.h3 { font-family: var(--font-display); font-weight: 600; font-size: 20px; }
+
+/* ---- Responsive ---- */
+@media (max-width: 768px) {
+  .section    { padding: 64px 0; }
+  .section-sm { padding: 40px 0; }
+  .container  { padding-inline: 20px; }
+}
+@media (max-width: 480px) {
+  .section    { padding: 48px 0; }
+  .section-sm { padding: 32px 0; }
+  .container  { padding-inline: 16px; }
+}
