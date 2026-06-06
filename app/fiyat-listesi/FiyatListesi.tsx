@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { supabase } from '@/lib/supabase'
 
 interface FiyatItem {
   id: string
@@ -10,21 +11,6 @@ interface FiyatItem {
   pdfUrl: string
   pdfName: string
 }
-
-const DEFAULT_ITEMS: FiyatItem[] = [
-  { id: '1',  firma: 'Flamco',        logoUrl: '', pdfUrl: '', pdfName: '' },
-  { id: '2',  firma: 'Grundfos',      logoUrl: '', pdfUrl: '', pdfName: '' },
-  { id: '3',  firma: 'Honeywell',     logoUrl: '', pdfUrl: '', pdfName: '' },
-  { id: '4',  firma: 'Watts',         logoUrl: '', pdfUrl: '', pdfName: '' },
-  { id: '5',  firma: 'Gestra',        logoUrl: '', pdfUrl: '', pdfName: '' },
-  { id: '6',  firma: 'Viking',        logoUrl: '', pdfUrl: '', pdfName: '' },
-  { id: '7',  firma: 'Tyco',          logoUrl: '', pdfUrl: '', pdfName: '' },
-  { id: '8',  firma: 'Danfoss',       logoUrl: '', pdfUrl: '', pdfName: '' },
-  { id: '9',  firma: 'Daikin',        logoUrl: '', pdfUrl: '', pdfName: '' },
-  { id: '10', firma: 'Alfa Laval',    logoUrl: '', pdfUrl: '', pdfName: '' },
-  { id: '11', firma: 'Spirax Sarco',  logoUrl: '', pdfUrl: '', pdfName: '' },
-  { id: '12', firma: 'Georg Fischer', logoUrl: '', pdfUrl: '', pdfName: '' },
-]
 
 function toSlug(firma: string) {
   return firma.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
@@ -35,13 +21,28 @@ function initials(firma: string) {
 }
 
 export default function FiyatListesi() {
-  const [items, setItems] = useState<FiyatItem[]>(DEFAULT_ITEMS)
+  const [items, setItems] = useState<FiyatItem[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const saved = localStorage.getItem('lukas_fiyat_listesi')
-    if (saved) {
-      try { setItems(JSON.parse(saved)) } catch {}
+    async function load() {
+      if (!supabase) { setLoading(false); return }
+      const { data } = await supabase
+        .from('fiyat_listesi')
+        .select('*')
+        .order('created_at', { ascending: true })
+      if (data) {
+        setItems(data.map((r) => ({
+          id:       r.id,
+          firma:    r.firma,
+          logoUrl:  r.logo_url  ?? '',
+          pdfUrl:   r.pdf_url   ?? '',
+          pdfName:  r.pdf_name  ?? '',
+        })))
+      }
+      setLoading(false)
     }
+    load()
   }, [])
 
   return (
@@ -60,19 +61,37 @@ export default function FiyatListesi() {
         </span>
       </div>
 
+      {/* Loading */}
+      {loading && (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}>
+          <div style={{ width: '36px', height: '36px', borderRadius: '50%', border: '3px solid var(--brand-tint)', borderTopColor: 'var(--brand)', animation: 'spin 0.8s linear infinite' }} />
+          <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+        </div>
+      )}
+
+      {/* Empty state */}
+      {!loading && items.length === 0 && (
+        <div style={{ textAlign: 'center', padding: '64px 20px', color: 'var(--ink-soft)' }}>
+          <p style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '17px', marginBottom: '8px' }}>Henüz fiyat listesi eklenmedi</p>
+          <p style={{ fontSize: '14px' }}>Admin panelinden fiyat listesi ekleyebilirsiniz.</p>
+        </div>
+      )}
+
       {/* Brand grid */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-          gap: '20px',
-          marginBottom: '56px',
-        }}
-      >
-        {items.map((item) => (
-          <BrandCard key={item.id} item={item} />
-        ))}
-      </div>
+      {!loading && items.length > 0 && (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+            gap: '20px',
+            marginBottom: '56px',
+          }}
+        >
+          {items.map((item) => (
+            <BrandCard key={item.id} item={item} />
+          ))}
+        </div>
+      )}
 
       {/* CTA */}
       <div
@@ -84,7 +103,6 @@ export default function FiyatListesi() {
           overflow: 'hidden',
         }}
       >
-        {/* decorative circles */}
         <div style={{ position: 'absolute', right: '-60px', top: '-60px', width: '240px', height: '240px', borderRadius: '50%', background: 'rgba(255,255,255,.06)' }} />
         <div style={{ position: 'absolute', right: '60px', bottom: '-80px', width: '180px', height: '180px', borderRadius: '50%', background: 'rgba(255,255,255,.04)' }} />
 
@@ -190,7 +208,6 @@ function BrandCard({ item }: { item: FiyatItem }) {
           </div>
         )}
 
-        {/* PDF badge */}
         {item.pdfName ? (
           <span style={{
             position: 'absolute', top: '10px', right: '10px',

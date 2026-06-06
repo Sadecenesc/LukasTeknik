@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
+import { supabase } from '@/lib/supabase'
 
 const SITE = {
   phone: '0505 699 52 45',
@@ -44,24 +45,25 @@ const iconBase: React.CSSProperties = {
   flexShrink: 0,
 }
 
+function waLink() {
+  return `https://wa.me/${SITE.whatsapp}?text=${encodeURIComponent(SITE.waMsg)}`
+}
+
 export default function Footer() {
-  const [social, setSocial] = useState({
-    instagram: '',
-    linkedin: '',
-    whatsapp: `https://wa.me/${SITE.whatsapp}?text=${encodeURIComponent(SITE.waMsg)}`,
-  })
+  const [instagram, setInstagram] = useState('')
+  const [linkedin, setLinkedin] = useState('')
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('lukas_social_links')
-      const parsed = saved ? JSON.parse(saved) : {}
-      localStorage.setItem('lukas_social_links', JSON.stringify({ ...parsed, whatsapp: SITE.whatsapp }))
-      setSocial({
-        instagram: parsed.instagram || '',
-        linkedin: parsed.linkedin || '',
-        whatsapp: `https://wa.me/${SITE.whatsapp}?text=${encodeURIComponent(SITE.waMsg)}`,
-      })
-    } catch {}
+    async function load() {
+      if (!supabase) return
+      const { data } = await supabase.from('site_settings').select('key, value')
+      if (data) {
+        const map = Object.fromEntries(data.map((r) => [r.key, r.value]))
+        if (map.instagram) setInstagram(map.instagram)
+        if (map.linkedin)  setLinkedin(map.linkedin)
+      }
+    }
+    load()
   }, [])
 
   return (
@@ -88,14 +90,14 @@ export default function Footer() {
             {/* Sosyal ikonlar */}
             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
               {/* WhatsApp */}
-              <a href={social.whatsapp} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" style={iconBase}>
+              <a href={waLink()} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" style={iconBase}>
                 <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: '18px', height: '18px' }}>
                   <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2zm4.76 13.73c-.26-.13-1.54-.76-1.78-.85-.24-.09-.41-.13-.59.13-.17.26-.67.85-.83 1.03-.15.17-.3.2-.56.07-.26-.13-1.1-.41-2.1-1.29-.78-.69-1.3-1.55-1.45-1.81-.15-.26-.02-.4.11-.53.12-.12.26-.3.39-.46.13-.15.17-.26.26-.43.09-.17.04-.33-.02-.46-.07-.13-.59-1.42-.81-1.94-.21-.51-.43-.44-.59-.45l-.5-.01c-.17 0-.46.06-.7.33-.24.26-.92.9-.92 2.19 0 1.29.94 2.53 1.07 2.71.13.17 1.85 2.83 4.48 3.96.63.27 1.11.43 1.49.55.63.2 1.2.17 1.65.1.5-.07 1.54-.63 1.76-1.24.22-.61.22-1.13.15-1.24-.06-.11-.23-.17-.49-.3z" />
                 </svg>
               </a>
 
               {/* Instagram */}
-              <a href={social.instagram || '#'} target="_blank" rel="noopener noreferrer" aria-label="Instagram" style={iconBase}>
+              <a href={instagram || '#'} target="_blank" rel="noopener noreferrer" aria-label="Instagram" style={iconBase}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ width: '18px', height: '18px' }}>
                   <rect x="2" y="2" width="20" height="20" rx="5" />
                   <circle cx="12" cy="12" r="4" />
@@ -104,7 +106,7 @@ export default function Footer() {
               </a>
 
               {/* LinkedIn */}
-              <a href={social.linkedin || '#'} target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" style={iconBase}>
+              <a href={linkedin || '#'} target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" style={iconBase}>
                 <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: '18px', height: '18px' }}>
                   <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
                   <rect x="2" y="9" width="4" height="12" />

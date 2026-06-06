@@ -4,11 +4,10 @@ import { useState, useRef, useEffect, Suspense } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { savePdf, deletePdf } from '@/lib/pdfStore'
+import { supabase } from '@/lib/supabase'
 
 type View = 'dashboard' | 'fiyat-listesi' | 'blog' | 'sosyal-medya'
 
-// Giriş şifresi — değiştirmek için buraya yaz
 const ADMIN_PASSWORD = 'lukas2026'
 
 const STATS = [
@@ -118,15 +117,11 @@ const LOGO2WEB_LOGOS = [
 
 const ALL_LOGOS = [...LOGOWEB_LOGOS, ...LOGO2WEB_LOGOS]
 
-const INITIAL_FIYAT: FiyatItem[] = []
-
 const INITIAL_BLOG: BlogItem[] = [
   { id: 'b1', title: 'Sprinkler sistemlerde doğru vana seçimi', cat: 'Yangın',  date: '14 Mayıs 2026',  status: 'Yayında' },
   { id: 'b2', title: 'Hidrofor grubu boyutlandırma rehberi',    cat: 'Pompa',   date: '28 Nisan 2026',  status: 'Yayında' },
   { id: 'b3', title: 'TSE ve CE belgelendirmesi',               cat: 'Genel',   date: '10 Nisan 2026',  status: 'Taslak'  },
 ]
-
-const BLOG_CATS = ['Yangın', 'Pompa', 'Genel', 'Isıtma', 'Endüstriyel', 'Teknik']
 
 function NavIcon({ icon }: { icon: string }) {
   const s: React.CSSProperties = { width: '19px', height: '19px', flexShrink: 0 }
@@ -142,12 +137,9 @@ function LoginScreen({ onLogin }: { onLogin: (pw: string) => boolean }) {
   const [pw, setPw] = useState('')
   const [err, setErr] = useState(false)
 
-  function submit(e: React.FormEvent) {
+  function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    if (!onLogin(pw)) {
-      setErr(true)
-      setPw('')
-    }
+    if (!onLogin(pw)) { setErr(true); setPw('') }
   }
 
   return (
@@ -171,10 +163,7 @@ function LoginScreen({ onLogin }: { onLogin: (pw: string) => boolean }) {
             />
             {err && <p style={{ color: 'var(--ember)', fontSize: '13px', marginTop: '6px', fontFamily: 'var(--font-display)', fontWeight: 500 }}>Hatalı şifre, tekrar deneyin.</p>}
           </div>
-          <button
-            type="submit"
-            style={{ width: '100%', padding: '13px', borderRadius: 'var(--r-sm)', border: 'none', background: 'var(--brand)', color: '#fff', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '15.5px', cursor: 'pointer' }}
-          >
+          <button type="submit" style={{ width: '100%', padding: '13px', borderRadius: 'var(--r-sm)', border: 'none', background: 'var(--brand)', color: '#fff', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '15.5px', cursor: 'pointer' }}>
             Giriş Yap
           </button>
         </form>
@@ -212,7 +201,7 @@ function AdminInner() {
     setIsAuthenticated(false)
   }
 
-  // View — URL ?view= parametresinden de okunur
+  // View
   const searchParams = useSearchParams()
   const [view, setView] = useState<View>('dashboard')
   useEffect(() => {
@@ -221,18 +210,14 @@ function AdminInner() {
   }, [searchParams])
 
   // Fiyat listesi
-  const [fiyatListesi, setFiyatListesi] = useState<FiyatItem[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('lukas_fiyat_listesi')
-      if (saved) { try { return JSON.parse(saved) } catch {} }
-    }
-    return INITIAL_FIYAT
-  })
+  const [fiyatListesi, setFiyatListesi] = useState<FiyatItem[]>([])
+  const [fiyatLoading, setFiyatLoading] = useState(true)
   const [yeniFirma, setYeniFirma] = useState('')
   const [selectedLogoFile, setSelectedLogoFile] = useState<string | null>(null)
   const [yeniLogoFile, setYeniLogoFile] = useState<File | null>(null)
   const [yeniPdfFile, setYeniPdfFile] = useState<File | null>(null)
   const [fiyatSaved, setFiyatSaved] = useState(false)
+  const [fiyatUploading, setFiyatUploading] = useState(false)
   const logoInputRef = useRef<HTMLInputElement>(null)
   const pdfInputRef = useRef<HTMLInputElement>(null)
 
@@ -245,13 +230,7 @@ function AdminInner() {
   const editPdfRef = useRef<HTMLInputElement>(null)
 
   // Blog
-  const [blogItems, setBlogItems] = useState<BlogItem[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('lukas_blog_items')
-      if (saved) { try { return JSON.parse(saved) } catch {} }
-    }
-    return INITIAL_BLOG
-  })
+  const [blogItems] = useState<BlogItem[]>(INITIAL_BLOG)
 
   // Sosyal medya
   const [instagram, setInstagram] = useState('')
@@ -259,17 +238,41 @@ function AdminInner() {
   const [waNumber, setWaNumber] = useState('905056995245')
   const [sosyalSaved, setSosyalSaved] = useState(false)
 
+  // ── Veri yükleme ─────────────────────────────────────────────────────────
   useEffect(() => {
-    try {
-      const s = localStorage.getItem('lukas_social_links')
-      if (s) {
-        const p = JSON.parse(s)
-        if (p.instagram !== undefined) setInstagram(p.instagram)
-        if (p.linkedin !== undefined) setLinkedin(p.linkedin)
-        if (p.whatsapp) setWaNumber(p.whatsapp)
+    if (!isAuthenticated) return
+    async function loadAll() {
+      if (!supabase) { setFiyatLoading(false); return }
+
+      // Fiyat listesi
+      const { data: fiyatData } = await supabase
+        .from('fiyat_listesi')
+        .select('*')
+        .order('created_at', { ascending: true })
+      if (fiyatData) {
+        setFiyatListesi(fiyatData.map((r) => ({
+          id:      r.id,
+          firma:   r.firma,
+          logoUrl: r.logo_url  ?? '',
+          pdfUrl:  r.pdf_url   ?? '',
+          pdfName: r.pdf_name  ?? '',
+        })))
       }
-    } catch {}
-  }, [])
+      setFiyatLoading(false)
+
+      // Sosyal medya linkleri
+      const { data: settingsData } = await supabase
+        .from('site_settings')
+        .select('key, value')
+      if (settingsData) {
+        const map = Object.fromEntries(settingsData.map((r) => [r.key, r.value]))
+        if (map.instagram !== undefined) setInstagram(map.instagram)
+        if (map.linkedin  !== undefined) setLinkedin(map.linkedin)
+        if (map.whatsapp)                setWaNumber(map.whatsapp)
+      }
+    }
+    loadAll()
+  }, [isAuthenticated])
 
   const thStyle: React.CSSProperties = { textAlign: 'left', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '12px', letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--ink-faint)', padding: '13px 24px', background: 'var(--bg-soft)' }
   const tdStyle: React.CSSProperties = { padding: '15px 24px', borderTop: '1px solid var(--line)', fontSize: '14.5px' }
@@ -277,41 +280,59 @@ function AdminInner() {
 
   // ── Fiyat işlemleri ───────────────────────────────────────────────────────
   async function addFiyat() {
-    if (!yeniFirma.trim()) return
+    if (!yeniFirma.trim() || !supabase) return
+    setFiyatUploading(true)
     const id = String(Date.now())
+
     let logoUrl = ''
     if (selectedLogoFile) {
       logoUrl = `/assets/${selectedLogoFile}`
     } else if (yeniLogoFile) {
-      logoUrl = await new Promise<string>((resolve) => {
-        const reader = new FileReader()
-        reader.onload = () => resolve(reader.result as string)
-        reader.readAsDataURL(yeniLogoFile)
-      })
+      const ext = yeniLogoFile.name.split('.').pop()
+      const { data } = await supabase.storage.from('logos').upload(`${id}.${ext}`, yeniLogoFile, { upsert: true })
+      if (data) {
+        logoUrl = supabase.storage.from('logos').getPublicUrl(data.path).data.publicUrl
+      }
     }
+
+    let pdfUrl = ''
     let pdfName = ''
     if (yeniPdfFile) {
       pdfName = yeniPdfFile.name
-      await savePdf(id, yeniPdfFile)
+      const { data } = await supabase.storage.from('pdfs').upload(`${id}.pdf`, yeniPdfFile, { upsert: true })
+      if (data) {
+        pdfUrl = supabase.storage.from('pdfs').getPublicUrl(data.path).data.publicUrl
+      }
     }
-    setFiyatListesi((prev) => {
-      const next = [...prev, { id, firma: yeniFirma, logoUrl, pdfUrl: yeniPdfFile ? `idb:${id}` : '', pdfName }]
-      localStorage.setItem('lukas_fiyat_listesi', JSON.stringify(next))
-      return next
+
+    const { error } = await supabase.from('fiyat_listesi').insert({
+      id, firma: yeniFirma.trim(), logo_url: logoUrl, pdf_url: pdfUrl, pdf_name: pdfName,
     })
-    setYeniFirma(''); setSelectedLogoFile(null); setYeniLogoFile(null); setYeniPdfFile(null)
-    if (logoInputRef.current) logoInputRef.current.value = ''
-    if (pdfInputRef.current) pdfInputRef.current.value = ''
-    setFiyatSaved(true); setTimeout(() => setFiyatSaved(false), 2500)
+
+    if (!error) {
+      setFiyatListesi((prev) => [...prev, { id, firma: yeniFirma.trim(), logoUrl, pdfUrl, pdfName }])
+      setYeniFirma(''); setSelectedLogoFile(null); setYeniLogoFile(null); setYeniPdfFile(null)
+      if (logoInputRef.current) logoInputRef.current.value = ''
+      if (pdfInputRef.current) pdfInputRef.current.value = ''
+      setFiyatSaved(true); setTimeout(() => setFiyatSaved(false), 2500)
+    }
+    setFiyatUploading(false)
   }
 
   async function removeFiyat(id: string) {
-    await deletePdf(id).catch(() => {})
-    setFiyatListesi((prev) => {
-      const next = prev.filter((f) => f.id !== id)
-      localStorage.setItem('lukas_fiyat_listesi', JSON.stringify(next))
-      return next
-    })
+    if (!supabase) return
+    const item = fiyatListesi.find((f) => f.id === id)
+    // Storage temizliği — Supabase URL ise dosyayı da sil
+    if (item?.pdfUrl?.includes('/pdfs/')) {
+      const path = item.pdfUrl.split('/pdfs/').pop()
+      if (path) await supabase.storage.from('pdfs').remove([decodeURIComponent(path.split('?')[0])])
+    }
+    if (item?.logoUrl?.includes('/logos/')) {
+      const path = item.logoUrl.split('/logos/').pop()
+      if (path) await supabase.storage.from('logos').remove([decodeURIComponent(path.split('?')[0])])
+    }
+    await supabase.from('fiyat_listesi').delete().eq('id', id)
+    setFiyatListesi((prev) => prev.filter((f) => f.id !== id))
   }
 
   function startEditFiyat(item: FiyatItem) {
@@ -322,49 +343,46 @@ function AdminInner() {
   }
 
   async function saveEditFiyat(item: FiyatItem) {
+    if (!supabase) return
+    setFiyatUploading(true)
     let logoUrl = item.logoUrl
-    if (editLogoFile) {
-      logoUrl = await new Promise<string>((resolve) => {
-        const reader = new FileReader()
-        reader.onload = () => resolve(reader.result as string)
-        reader.readAsDataURL(editLogoFile)
-      })
-    }
-    let pdfName = item.pdfName
     let pdfUrl = item.pdfUrl
+    let pdfName = item.pdfName
+
+    if (editLogoFile) {
+      const ext = editLogoFile.name.split('.').pop()
+      const { data } = await supabase.storage.from('logos').upload(`${item.id}.${ext}`, editLogoFile, { upsert: true })
+      if (data) logoUrl = supabase.storage.from('logos').getPublicUrl(data.path).data.publicUrl
+    }
+
     if (editPdfFile) {
       pdfName = editPdfFile.name
-      await savePdf(item.id, editPdfFile)
-      pdfUrl = `idb:${item.id}`
+      const { data } = await supabase.storage.from('pdfs').upload(`${item.id}.pdf`, editPdfFile, { upsert: true })
+      if (data) pdfUrl = supabase.storage.from('pdfs').getPublicUrl(data.path).data.publicUrl
     }
-    setFiyatListesi((prev) => {
-      const next = prev.map((f) => f.id === item.id ? { ...f, firma: editFirma, logoUrl, pdfName, pdfUrl } : f)
-      localStorage.setItem('lukas_fiyat_listesi', JSON.stringify(next))
-      return next
-    })
+
+    await supabase.from('fiyat_listesi').update({
+      firma: editFirma, logo_url: logoUrl, pdf_url: pdfUrl, pdf_name: pdfName,
+    }).eq('id', item.id)
+
+    setFiyatListesi((prev) => prev.map((f) => f.id === item.id ? { ...f, firma: editFirma, logoUrl, pdfUrl, pdfName } : f))
     setEditingFiyatId(null)
+    setFiyatUploading(false)
   }
 
-  // ── Blog işlemleri ────────────────────────────────────────────────────────
-  function deleteBlog(id: string) {
-    setBlogItems((prev) => {
-      const next = prev.filter((b) => b.id !== id)
-      localStorage.setItem('lukas_blog_items', JSON.stringify(next))
-      return next
-    })
-  }
-
-  function saveSosyal() {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('lukas_social_links', JSON.stringify({ instagram, linkedin, whatsapp: waNumber }))
-    }
+  // ── Sosyal medya kaydet ───────────────────────────────────────────────────
+  async function saveSosyal() {
+    if (!supabase) return
+    await Promise.all([
+      supabase.from('site_settings').upsert({ key: 'instagram', value: instagram }),
+      supabase.from('site_settings').upsert({ key: 'linkedin',  value: linkedin }),
+      supabase.from('site_settings').upsert({ key: 'whatsapp',  value: waNumber }),
+    ])
     setSosyalSaved(true); setTimeout(() => setSosyalSaved(false), 2500)
   }
 
   // ── Auth gate ─────────────────────────────────────────────────────────────
-  if (!isAuthenticated) {
-    return <LoginScreen onLogin={handleLogin} />
-  }
+  if (!isAuthenticated) return <LoginScreen onLogin={handleLogin} />
 
   // ── Panel UI ──────────────────────────────────────────────────────────────
   return (
@@ -379,7 +397,6 @@ function AdminInner() {
           <div style={{ fontSize: '12px', color: '#7f877f', padding: '0 6px 18px', borderBottom: '1px solid rgba(255,255,255,.1)', marginBottom: '16px', letterSpacing: '.04em', fontFamily: 'var(--font-display)' }}>
             YÖNETİM PANELİ
           </div>
-
           <nav style={{ flex: 1 }}>
             <div style={{ fontSize: '11px', letterSpacing: '.12em', textTransform: 'uppercase', color: '#6b736b', fontFamily: 'var(--font-display)', fontWeight: 600, padding: '14px 10px 8px' }}>Yönetim</div>
             {NAV_ITEMS.map((item) => (
@@ -393,7 +410,6 @@ function AdminInner() {
               </button>
             ))}
           </nav>
-
           <div style={{ paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,.1)' }}>
             <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '11px 12px', borderRadius: 'var(--r-sm)', fontFamily: 'var(--font-display)', fontWeight: 500, fontSize: '14.5px', color: '#c3cac3', textDecoration: 'none', marginBottom: '4px' }}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ width: '19px', height: '19px' }}>
@@ -401,10 +417,7 @@ function AdminInner() {
               </svg>
               Siteye dön
             </Link>
-            <button
-              onClick={handleLogout}
-              style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '11px 12px', borderRadius: 'var(--r-sm)', fontFamily: 'var(--font-display)', fontWeight: 500, fontSize: '14.5px', color: '#e87d7d', background: 'transparent', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left', marginBottom: '8px' }}
-            >
+            <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '11px 12px', borderRadius: 'var(--r-sm)', fontFamily: 'var(--font-display)', fontWeight: 500, fontSize: '14.5px', color: '#e87d7d', background: 'transparent', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left', marginBottom: '8px' }}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ width: '19px', height: '19px' }}>
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
               </svg>
@@ -455,7 +468,6 @@ function AdminInner() {
                     </div>
                   ))}
                 </div>
-
                 <div style={{ background: '#fff', border: '1px solid var(--line)', borderRadius: 'var(--r-lg)', overflow: 'hidden' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid var(--line)' }}>
                     <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '17px' }}>Son blog yazıları</h3>
@@ -478,6 +490,13 @@ function AdminInner() {
             {/* FİYAT LİSTESİ */}
             {view === 'fiyat-listesi' && (
               <>
+                {/* Supabase uyarısı */}
+                {!supabase && (
+                  <div style={{ background: '#fff3cd', border: '1px solid #ffc107', borderRadius: 'var(--r-sm)', padding: '14px 20px', marginBottom: '20px', fontFamily: 'var(--font-display)', fontSize: '14px', color: '#856404' }}>
+                    ⚠️ Supabase bağlantısı yok. .env.local dosyasındaki NEXT_PUBLIC_SUPABASE_URL ve NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY değerlerini kontrol edin.
+                  </div>
+                )}
+
                 {/* Yeni ekleme formu */}
                 <div style={{ background: '#fff', border: '1px solid var(--line)', borderRadius: 'var(--r-lg)', padding: '28px', marginBottom: '24px' }}>
                   <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '17px', marginBottom: '22px' }}>Yeni Fiyat Listesi Ekle</h3>
@@ -505,11 +524,7 @@ function AdminInner() {
                             }}
                           >
                             {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={`/assets/${key}`}
-                              alt={logo.firma}
-                              style={{ height: '40px', width: '90px', objectFit: 'contain' }}
-                            />
+                            <img src={`/assets/${key}`} alt={logo.firma} style={{ height: '40px', width: '90px', objectFit: 'contain' }} />
                             <span style={{ fontSize: '10.5px', fontFamily: 'var(--font-display)', fontWeight: 500, color: isSelected ? 'var(--brand-700)' : 'var(--ink-2)', textAlign: 'center', lineHeight: 1.3, wordBreak: 'break-word', width: '100%' }}>
                               {logo.firma}
                             </span>
@@ -518,11 +533,7 @@ function AdminInner() {
                       })}
                     </div>
                     {selectedLogoFile && (
-                      <button
-                        type="button"
-                        onClick={() => { setSelectedLogoFile(null) }}
-                        style={{ marginTop: '8px', fontSize: '12px', color: 'var(--ink-faint)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-display)', padding: 0 }}
-                      >
+                      <button type="button" onClick={() => setSelectedLogoFile(null)} style={{ marginTop: '8px', fontSize: '12px', color: 'var(--ink-faint)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-display)', padding: 0 }}>
                         ✕ Seçimi temizle
                       </button>
                     )}
@@ -534,7 +545,7 @@ function AdminInner() {
                     <input style={{ ...inputSt, maxWidth: '400px' }} placeholder="Logo seçince otomatik dolar, düzenlenebilir" value={yeniFirma} onChange={(e) => setYeniFirma(e.target.value)} />
                   </div>
 
-                  {/* PDF (opsiyonel — sonra Düzenle ile de eklenebilir) */}
+                  {/* PDF */}
                   <div style={{ marginBottom: '20px' }}>
                     <label style={{ display: 'block', fontFamily: 'var(--font-display)', fontWeight: 500, fontSize: '13px', marginBottom: '7px', color: 'var(--ink-2)' }}>PDF Fiyat Listesi <span style={{ color: 'var(--ink-faint)', fontWeight: 400 }}>(opsiyonel — sonra Düzenle ile ekleyebilirsiniz)</span></label>
                     <label style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', padding: '11px 14px', border: '1px dashed var(--line-2)', borderRadius: 'var(--r-sm)', cursor: 'pointer', background: yeniPdfFile ? 'var(--brand-tint)' : '#fff' }}>
@@ -545,85 +556,96 @@ function AdminInner() {
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    <button onClick={addFiyat} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '11px 22px', borderRadius: 'var(--r-sm)', border: 'none', background: 'var(--brand)', color: '#fff', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '14.5px', cursor: 'pointer' }}>+ Ekle</button>
+                    <button
+                      onClick={addFiyat}
+                      disabled={fiyatUploading || !supabase}
+                      style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '11px 22px', borderRadius: 'var(--r-sm)', border: 'none', background: fiyatUploading ? 'var(--line-2)' : 'var(--brand)', color: '#fff', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '14.5px', cursor: fiyatUploading ? 'not-allowed' : 'pointer' }}
+                    >
+                      {fiyatUploading ? 'Yükleniyor…' : '+ Ekle'}
+                    </button>
                     {fiyatSaved && <span style={{ fontFamily: 'var(--font-display)', color: 'var(--brand-700)', fontSize: '14px', fontWeight: 600 }}>✓ Eklendi</span>}
                   </div>
                 </div>
 
-                {/* Mevcut listeler tablosu */}
+                {/* Mevcut listeler */}
                 <div style={{ background: '#fff', border: '1px solid var(--line)', borderRadius: 'var(--r-lg)', overflow: 'hidden' }}>
                   <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--line)' }}>
                     <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '17px' }}>Mevcut Fiyat Listeleri</h3>
                   </div>
-                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <thead>
-                      <tr>
-                        <th style={thStyle}>Firma</th>
-                        <th style={thStyle}>Logo</th>
-                        <th style={thStyle}>PDF</th>
-                        <th style={thStyle}>İşlem</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {fiyatListesi.map((f) => (
-                        editingFiyatId === f.id ? (
-                          /* ── Düzenleme satırı ── */
-                          <tr key={f.id} style={{ background: 'var(--brand-tint)' }}>
-                            <td style={tdStyle}>
-                              <input
-                                value={editFirma}
-                                onChange={(e) => setEditFirma(e.target.value)}
-                                style={{ ...inputSt, maxWidth: '200px', padding: '8px 10px', fontSize: '14px' }}
-                              />
-                            </td>
-                            <td style={tdStyle}>
-                              <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '7px 12px', border: '1px dashed var(--line-2)', borderRadius: 'var(--r-sm)', cursor: 'pointer', fontSize: '13px', color: editLogoFile ? 'var(--brand-700)' : 'var(--ink-soft)', background: '#fff', whiteSpace: 'nowrap' }}>
-                                {editLogoFile ? editLogoFile.name : 'Logo değiştir…'}
-                                <input ref={editLogoRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => setEditLogoFile(e.target.files?.[0] ?? null)} />
-                              </label>
-                            </td>
-                            <td style={tdStyle}>
-                              <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '7px 12px', border: '1px dashed var(--line-2)', borderRadius: 'var(--r-sm)', cursor: 'pointer', fontSize: '13px', color: editPdfFile ? 'var(--brand-700)' : 'var(--ink-soft)', background: '#fff', whiteSpace: 'nowrap' }}>
-                                {editPdfFile ? editPdfFile.name : (f.pdfName || 'PDF değiştir…')}
-                                <input ref={editPdfRef} type="file" accept=".pdf" style={{ display: 'none' }} onChange={(e) => setEditPdfFile(e.target.files?.[0] ?? null)} />
-                              </label>
-                            </td>
-                            <td style={tdStyle}>
-                              <div style={{ display: 'flex', gap: '8px' }}>
-                                <button onClick={() => saveEditFiyat(f)} style={{ padding: '5px 13px', borderRadius: 'var(--r-sm)', border: '1px solid var(--brand)', background: 'var(--brand)', color: '#fff', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}>Kaydet</button>
-                                <button onClick={() => setEditingFiyatId(null)} style={{ padding: '5px 13px', borderRadius: 'var(--r-sm)', border: '1px solid var(--line-2)', background: '#fff', color: 'var(--ink-2)', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}>İptal</button>
-                              </div>
-                            </td>
-                          </tr>
-                        ) : (
-                          /* ── Normal satır ── */
-                          <tr key={f.id}>
-                            <td style={tdStyle}><b style={{ fontFamily: 'var(--font-display)', fontWeight: 600 }}>{f.firma}</b></td>
-                            <td style={tdStyle}>
-                              {f.logoUrl
-                                // eslint-disable-next-line @next/next/no-img-element
-                                ? <img src={f.logoUrl} alt={f.firma} style={{ height: '32px', width: 'auto', objectFit: 'contain', display: 'block', border: '1px solid var(--line)', borderRadius: '4px', padding: '2px 4px' }} />
-                                : <span style={{ color: 'var(--ink-faint)', fontSize: '13px' }}>—</span>}
-                            </td>
-                            <td style={tdStyle}>
-                              {f.pdfName
-                                ? <span style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '13px', color: 'var(--brand-700)' }}>
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: '13px', height: '13px', flexShrink: 0 }}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
-                                    {f.pdfName}
-                                  </span>
-                                : <span style={{ color: 'var(--ink-faint)', fontSize: '13px' }}>Yüklenmedi</span>}
-                            </td>
-                            <td style={tdStyle}>
-                              <div style={{ display: 'flex', gap: '8px' }}>
-                                <button onClick={() => startEditFiyat(f)} style={{ padding: '5px 13px', borderRadius: 'var(--r-sm)', border: '1px solid var(--brand)', background: 'var(--brand-tint)', color: 'var(--brand-700)', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}>Düzenle</button>
-                                <button onClick={() => removeFiyat(f.id)} style={{ padding: '5px 13px', borderRadius: 'var(--r-sm)', border: '1px solid var(--ember)', background: 'var(--ember-tint)', color: 'var(--ember)', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}>Sil</button>
-                              </div>
-                            </td>
-                          </tr>
-                        )
-                      ))}
-                    </tbody>
-                  </table>
+                  {fiyatLoading ? (
+                    <div style={{ padding: '40px', textAlign: 'center' }}>
+                      <div style={{ width: '32px', height: '32px', borderRadius: '50%', border: '3px solid var(--brand-tint)', borderTopColor: 'var(--brand)', animation: 'spin 0.8s linear infinite', margin: '0 auto' }} />
+                      <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+                    </div>
+                  ) : (
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                      <thead>
+                        <tr>
+                          <th style={thStyle}>Firma</th>
+                          <th style={thStyle}>Logo</th>
+                          <th style={thStyle}>PDF</th>
+                          <th style={thStyle}>İşlem</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {fiyatListesi.length === 0 ? (
+                          <tr><td colSpan={4} style={{ ...tdStyle, textAlign: 'center', color: 'var(--ink-faint)', padding: '32px' }}>Henüz fiyat listesi eklenmedi.</td></tr>
+                        ) : fiyatListesi.map((f) => (
+                          editingFiyatId === f.id ? (
+                            <tr key={f.id} style={{ background: 'var(--brand-tint)' }}>
+                              <td style={tdStyle}>
+                                <input value={editFirma} onChange={(e) => setEditFirma(e.target.value)} style={{ ...inputSt, maxWidth: '200px', padding: '8px 10px', fontSize: '14px' }} />
+                              </td>
+                              <td style={tdStyle}>
+                                <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '7px 12px', border: '1px dashed var(--line-2)', borderRadius: 'var(--r-sm)', cursor: 'pointer', fontSize: '13px', color: editLogoFile ? 'var(--brand-700)' : 'var(--ink-soft)', background: '#fff', whiteSpace: 'nowrap' }}>
+                                  {editLogoFile ? editLogoFile.name : 'Logo değiştir…'}
+                                  <input ref={editLogoRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => setEditLogoFile(e.target.files?.[0] ?? null)} />
+                                </label>
+                              </td>
+                              <td style={tdStyle}>
+                                <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '7px 12px', border: '1px dashed var(--line-2)', borderRadius: 'var(--r-sm)', cursor: 'pointer', fontSize: '13px', color: editPdfFile ? 'var(--brand-700)' : 'var(--ink-soft)', background: '#fff', whiteSpace: 'nowrap' }}>
+                                  {editPdfFile ? editPdfFile.name : (f.pdfName || 'PDF değiştir…')}
+                                  <input ref={editPdfRef} type="file" accept=".pdf" style={{ display: 'none' }} onChange={(e) => setEditPdfFile(e.target.files?.[0] ?? null)} />
+                                </label>
+                              </td>
+                              <td style={tdStyle}>
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                  <button onClick={() => saveEditFiyat(f)} disabled={fiyatUploading} style={{ padding: '5px 13px', borderRadius: 'var(--r-sm)', border: '1px solid var(--brand)', background: 'var(--brand)', color: '#fff', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}>
+                                    {fiyatUploading ? '…' : 'Kaydet'}
+                                  </button>
+                                  <button onClick={() => setEditingFiyatId(null)} style={{ padding: '5px 13px', borderRadius: 'var(--r-sm)', border: '1px solid var(--line-2)', background: '#fff', color: 'var(--ink-2)', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}>İptal</button>
+                                </div>
+                              </td>
+                            </tr>
+                          ) : (
+                            <tr key={f.id}>
+                              <td style={tdStyle}><b style={{ fontFamily: 'var(--font-display)', fontWeight: 600 }}>{f.firma}</b></td>
+                              <td style={tdStyle}>
+                                {f.logoUrl
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  ? <img src={f.logoUrl} alt={f.firma} style={{ height: '32px', width: 'auto', objectFit: 'contain', display: 'block', border: '1px solid var(--line)', borderRadius: '4px', padding: '2px 4px' }} />
+                                  : <span style={{ color: 'var(--ink-faint)', fontSize: '13px' }}>—</span>}
+                              </td>
+                              <td style={tdStyle}>
+                                {f.pdfName
+                                  ? <span style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '13px', color: 'var(--brand-700)' }}>
+                                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: '13px', height: '13px', flexShrink: 0 }}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
+                                      {f.pdfName}
+                                    </span>
+                                  : <span style={{ color: 'var(--ink-faint)', fontSize: '13px' }}>Yüklenmedi</span>}
+                              </td>
+                              <td style={tdStyle}>
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                  <button onClick={() => startEditFiyat(f)} style={{ padding: '5px 13px', borderRadius: 'var(--r-sm)', border: '1px solid var(--brand)', background: 'var(--brand-tint)', color: 'var(--brand-700)', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}>Düzenle</button>
+                                  <button onClick={() => removeFiyat(f.id)} style={{ padding: '5px 13px', borderRadius: 'var(--r-sm)', border: '1px solid var(--ember)', background: 'var(--ember-tint)', color: 'var(--ember)', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}>Sil</button>
+                                </div>
+                              </td>
+                            </tr>
+                          )
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
                 </div>
               </>
             )}
@@ -631,93 +653,32 @@ function AdminInner() {
             {/* BLOG */}
             {view === 'blog' && (
               <>
-                {/* Üst bar */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
                   <div>
                     <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '20px', color: 'var(--ink)' }}>Blog Yazıları</h2>
                     <p style={{ fontSize: '13.5px', color: 'var(--ink-soft)', marginTop: '2px' }}>{blogItems.length} yazı</p>
                   </div>
-                  <Link
-                    href="/admin/blog/new"
-                    style={{
-                      display: 'inline-flex', alignItems: 'center', gap: '7px',
-                      padding: '10px 20px', borderRadius: 'var(--r-sm)',
-                      background: 'var(--brand)', color: '#fff',
-                      fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '14px',
-                      textDecoration: 'none', whiteSpace: 'nowrap',
-                    }}
-                  >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '15px', height: '15px' }}>
-                      <path d="M12 5v14M5 12h14" />
-                    </svg>
+                  <Link href="/admin/blog/new" style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', padding: '10px 20px', borderRadius: 'var(--r-sm)', background: 'var(--brand)', color: '#fff', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '14px', textDecoration: 'none', whiteSpace: 'nowrap' }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '15px', height: '15px' }}><path d="M12 5v14M5 12h14" /></svg>
                     Yeni Yazı
                   </Link>
                 </div>
-
-                {/* Liste */}
                 <div style={{ background: '#fff', border: '1px solid var(--line)', borderRadius: 'var(--r-lg)', overflow: 'hidden' }}>
-                  {blogItems.length === 0 ? (
-                    <div style={{ padding: '56px 24px', textAlign: 'center' }}>
-                      <div style={{ fontSize: '36px', marginBottom: '12px' }}>📝</div>
-                      <p style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '16px', color: 'var(--ink-2)' }}>Henüz blog yazısı yok</p>
-                      <p style={{ fontSize: '13.5px', color: 'var(--ink-faint)', marginTop: '6px', marginBottom: '20px' }}>İlk yazını oluşturmak için butona tıkla.</p>
-                      <Link href="/admin/blog/new" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '10px 22px', borderRadius: 'var(--r-sm)', background: 'var(--brand)', color: '#fff', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '14px', textDecoration: 'none' }}>
-                        + Yeni Yazı Oluştur
-                      </Link>
-                    </div>
-                  ) : (
-                    blogItems.map((b, i) => (
-                      <div key={b.id} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '14px 20px', borderTop: i > 0 ? '1px solid var(--line)' : undefined }}>
-                        {/* Kapak küçük resim */}
-                        <div style={{
-                          width: '56px', height: '42px', borderRadius: '8px', flexShrink: 0,
-                          background: (b as { coverImageUrl?: string }).coverImageUrl ? 'transparent' : 'var(--brand-tint)',
-                          overflow: 'hidden', display: 'grid', placeItems: 'center',
-                        }}>
-                          {(b as { coverImageUrl?: string }).coverImageUrl
-                            // eslint-disable-next-line @next/next/no-img-element
-                            ? <img src={(b as { coverImageUrl?: string }).coverImageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            : <span style={{ fontSize: '20px' }}>📰</span>
-                          }
-                        </div>
-
-                        {/* Bilgi */}
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <b style={{ fontFamily: 'var(--font-display)', fontSize: '14.5px', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--ink)' }}>
-                            {b.title}
-                          </b>
-                          <span style={{ fontSize: '12.5px', color: 'var(--ink-faint)' }}>
-                            {b.cat} · {b.date}
-                          </span>
-                        </div>
-
-                        {/* Durum */}
-                        <span style={{
-                          fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '12px',
-                          padding: '3px 10px', borderRadius: 'var(--r-pill)', flexShrink: 0,
-                          ...TAG_STYLE[b.status === 'Yayında' ? 'done' : 'prog'],
-                        }}>
-                          {b.status}
-                        </span>
-
-                        {/* Aksiyonlar */}
-                        <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-                          <Link
-                            href={`/admin/blog/${b.id}`}
-                            style={{ padding: '5px 13px', borderRadius: 'var(--r-sm)', border: '1px solid var(--brand)', background: 'var(--brand-tint)', color: 'var(--brand-700)', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '12px', textDecoration: 'none' }}
-                          >
-                            Düzenle
-                          </Link>
-                          <button
-                            onClick={() => deleteBlog(b.id)}
-                            style={{ padding: '5px 13px', borderRadius: 'var(--r-sm)', border: '1px solid var(--ember)', background: 'var(--ember-tint)', color: 'var(--ember)', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}
-                          >
-                            Sil
-                          </button>
-                        </div>
+                  {blogItems.map((b, i) => (
+                    <div key={b.id} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '14px 20px', borderTop: i > 0 ? '1px solid var(--line)' : undefined }}>
+                      <div style={{ width: '56px', height: '42px', borderRadius: '8px', flexShrink: 0, background: 'var(--brand-tint)', overflow: 'hidden', display: 'grid', placeItems: 'center' }}>
+                        <span style={{ fontSize: '20px' }}>📰</span>
                       </div>
-                    ))
-                  )}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <b style={{ fontFamily: 'var(--font-display)', fontSize: '14.5px', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--ink)' }}>{b.title}</b>
+                        <span style={{ fontSize: '12.5px', color: 'var(--ink-faint)' }}>{b.cat} · {b.date}</span>
+                      </div>
+                      <span style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '12px', padding: '3px 10px', borderRadius: 'var(--r-pill)', flexShrink: 0, ...TAG_STYLE[b.status === 'Yayında' ? 'done' : 'prog'] }}>{b.status}</span>
+                      <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                        <Link href={`/admin/blog/${b.id}`} style={{ padding: '5px 13px', borderRadius: 'var(--r-sm)', border: '1px solid var(--brand)', background: 'var(--brand-tint)', color: 'var(--brand-700)', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '12px', textDecoration: 'none' }}>Düzenle</Link>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </>
             )}
@@ -742,7 +703,7 @@ function AdminInner() {
                     </div>
                   ))}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: '8px' }}>
-                    <button onClick={saveSosyal} style={{ padding: '12px 28px', borderRadius: 'var(--r-sm)', border: 'none', background: 'var(--brand)', color: '#fff', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '15px', cursor: 'pointer' }}>Kaydet</button>
+                    <button onClick={saveSosyal} disabled={!supabase} style={{ padding: '12px 28px', borderRadius: 'var(--r-sm)', border: 'none', background: 'var(--brand)', color: '#fff', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '15px', cursor: 'pointer' }}>Kaydet</button>
                     {sosyalSaved && <span style={{ fontFamily: 'var(--font-display)', color: 'var(--brand-700)', fontSize: '14px', fontWeight: 600 }}>✓ Kaydedildi</span>}
                   </div>
                 </div>
