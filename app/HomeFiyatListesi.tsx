@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
+import { supabase } from '@/lib/supabase'
 
 interface FiyatItem {
   id: string
@@ -10,17 +11,6 @@ interface FiyatItem {
   pdfUrl: string
   pdfName: string
 }
-
-const DEFAULT_ITEMS: FiyatItem[] = [
-  { id: '1', firma: 'Flamco',       logoUrl: '', pdfUrl: '', pdfName: '' },
-  { id: '2', firma: 'Grundfos',     logoUrl: '', pdfUrl: '', pdfName: '' },
-  { id: '3', firma: 'Honeywell',    logoUrl: '', pdfUrl: '', pdfName: '' },
-  { id: '4', firma: 'Watts',        logoUrl: '', pdfUrl: '', pdfName: '' },
-  { id: '5', firma: 'Viking',       logoUrl: '', pdfUrl: '', pdfName: '' },
-  { id: '6', firma: 'Danfoss',      logoUrl: '', pdfUrl: '', pdfName: '' },
-  { id: '7', firma: 'Daikin',       logoUrl: '', pdfUrl: '', pdfName: '' },
-  { id: '8', firma: 'Spirax Sarco', logoUrl: '', pdfUrl: '', pdfName: '' },
-]
 
 function toSlug(firma: string) {
   return firma.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
@@ -44,7 +34,8 @@ function useVisible() {
 }
 
 export default function HomeFiyatListesi() {
-  const [items, setItems] = useState<FiyatItem[]>(DEFAULT_ITEMS)
+  const [items, setItems] = useState<FiyatItem[]>([])
+  const [loading, setLoading] = useState(true)
   const [index, setIndex] = useState(0)
   const visible = useVisible()
   const autoRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -52,10 +43,24 @@ export default function HomeFiyatListesi() {
   const isDragging = useRef(false)
 
   useEffect(() => {
-    const saved = localStorage.getItem('lukas_fiyat_listesi')
-    if (saved) {
-      try { setItems(JSON.parse(saved)) } catch {}
+    async function load() {
+      if (!supabase) { setLoading(false); return }
+      const { data } = await supabase
+        .from('fiyat_listesi')
+        .select('*')
+        .order('created_at', { ascending: true })
+      if (data) {
+        setItems(data.map((r) => ({
+          id:      r.id,
+          firma:   r.firma,
+          logoUrl: r.logo_url  ?? '',
+          pdfUrl:  r.pdf_url   ?? '',
+          pdfName: r.pdf_name  ?? '',
+        })))
+      }
+      setLoading(false)
     }
+    load()
   }, [])
 
   const displayItems = items.slice(0, 9)
@@ -81,6 +86,23 @@ export default function HomeFiyatListesi() {
   }, [resetAuto])
 
   const cardW = 100 / visible
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}>
+        <div style={{ width: '36px', height: '36px', borderRadius: '50%', border: '3px solid var(--brand-tint)', borderTopColor: 'var(--brand)', animation: 'spin 0.8s linear infinite' }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+      </div>
+    )
+  }
+
+  if (items.length === 0) {
+    return (
+      <div style={{ textAlign: 'center', padding: '48px 20px', color: 'var(--ink-soft)' }}>
+        <p style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '16px' }}>Henüz fiyat listesi eklenmedi.</p>
+      </div>
+    )
+  }
 
   return (
     <div style={{ position: 'relative' }}>
