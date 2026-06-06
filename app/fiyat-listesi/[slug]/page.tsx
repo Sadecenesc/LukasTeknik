@@ -140,7 +140,7 @@ export default function FiyatListesiDetay() {
             >
               <Link href="/" style={{ color: 'var(--ink-soft)', textDecoration: 'none' }}>Ana Sayfa</Link>
               <span>/</span>
-              <Link href="/fiyat-listesi" style={{ color: 'var(--ink-soft)', textDecoration: 'none' }}>Fiyat Listesi</Link>
+              <Link href="/fiyat-listesi" style={{ color: 'var(--ink-soft)', textDecoration: 'none' }}>Fiyat Listeleri</Link>
               <span>/</span>
               <span style={{ color: 'var(--ink)' }}>{item.firma}</span>
             </div>

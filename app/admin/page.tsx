@@ -5,10 +5,9 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { verifyAdminPassword } from './actions'
 
 type View = 'dashboard' | 'fiyat-listesi' | 'blog' | 'sosyal-medya'
-
-const ADMIN_PASSWORD = 'lukas2026'
 
 const STATS = [
   { label: 'Bu Ay Proje', value: '34', delta: '+8', up: true },
@@ -129,13 +128,17 @@ function NavIcon({ icon }: { icon: string }) {
 }
 
 // ─── Login ekranı ────────────────────────────────────────────────────────────
-function LoginScreen({ onLogin }: { onLogin: (pw: string) => boolean }) {
+function LoginScreen({ onLogin }: { onLogin: (pw: string) => Promise<boolean> }) {
   const [pw, setPw] = useState('')
   const [err, setErr] = useState(false)
+  const [loading, setLoading] = useState(false)
 
-  function submit(e: React.FormEvent<HTMLFormElement>) {
+  async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    if (!onLogin(pw)) { setErr(true); setPw('') }
+    setLoading(true)
+    const ok = await onLogin(pw)
+    if (!ok) { setErr(true); setPw('') }
+    setLoading(false)
   }
 
   return (
@@ -159,8 +162,8 @@ function LoginScreen({ onLogin }: { onLogin: (pw: string) => boolean }) {
             />
             {err && <p style={{ color: 'var(--ember)', fontSize: '13px', marginTop: '6px', fontFamily: 'var(--font-display)', fontWeight: 500 }}>Hatalı şifre, tekrar deneyin.</p>}
           </div>
-          <button type="submit" style={{ width: '100%', padding: '13px', borderRadius: 'var(--r-sm)', border: 'none', background: 'var(--brand)', color: '#fff', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '15.5px', cursor: 'pointer' }}>
-            Giriş Yap
+          <button type="submit" disabled={loading} style={{ width: '100%', padding: '13px', borderRadius: 'var(--r-sm)', border: 'none', background: loading ? 'var(--line-2)' : 'var(--brand)', color: '#fff', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '15.5px', cursor: loading ? 'not-allowed' : 'pointer' }}>
+            {loading ? 'Doğrulanıyor…' : 'Giriş Yap'}
           </button>
         </form>
         <p style={{ textAlign: 'center', marginTop: '28px', fontSize: '13px', color: 'var(--ink-faint)' }}>
@@ -183,13 +186,13 @@ function AdminInner() {
     return false
   })
 
-  function handleLogin(pw: string): boolean {
-    if (pw === ADMIN_PASSWORD) {
+  async function handleLogin(pw: string): Promise<boolean> {
+    const ok = await verifyAdminPassword(pw)
+    if (ok) {
       sessionStorage.setItem('lukas_admin_auth', '1')
       setIsAuthenticated(true)
-      return true
     }
-    return false
+    return ok
   }
 
   function handleLogout() {

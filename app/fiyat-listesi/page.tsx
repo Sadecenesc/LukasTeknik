@@ -5,11 +5,11 @@ import PageHero from '@/components/PageHero'
 import FiyatListesi from './FiyatListesi'
 
 export const metadata: Metadata = {
-  title: 'Fiyat Listesi — Marka Bazlı Güncel PDF Fiyat Listeleri',
+  title: 'Fiyat Listeleri — Marka Bazlı Güncel PDF Fiyat Listeleri',
   description:
     'Flamco, Grundfos, Honeywell, Danfoss, Daikin ve daha fazlası — Türkiye distribütörü olduğumuz markaların güncel PDF fiyat listelerine ücretsiz ulaşın. Proje bazlı net fiyat için teklif formu.',
   openGraph: {
-    title: 'Fiyat Listesi — Lukas Teknik',
+    title: 'Fiyat Listeleri — Lukas Teknik',
     description:
       'Mekanik tesisat markalarının güncel PDF fiyat listeleri. Flamco, Grundfos, Honeywell, Danfoss ve daha fazlası.',
     url: 'https://www.lukasteknik.com/fiyat-listesi',
