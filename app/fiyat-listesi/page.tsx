@@ -28,8 +28,8 @@ export default function FiyatListesiPage() {
       <Navbar />
       <main>
         <PageHero
-          breadcrumb="Fiyat Listesi"
-          title="Fiyat Listesi"
+          breadcrumb="Fiyat Listeleri"
+          title="Fiyat Listeleri"
           description="Ürün gruplarımıza ait güncel fiyat aralıkları. Proje bazlı net fiyat ve iskonto için ürün listenizi gönderin."
         />
         <section className="section">

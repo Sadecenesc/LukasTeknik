@@ -12,6 +12,18 @@ interface FiyatItem {
   pdfName: string
 }
 
+const FIXED_BRANDS = [
+  'Duyar',
+  'Çayırova',
+  'Vesbo',
+  'Trakya Döküm',
+  'Kas',
+  'SARDOĞAN',
+  'Ayvaz',
+  'Flamco',
+  'Grundfos',
+]
+
 function toSlug(firma: string) {
   return firma.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
 }
@@ -44,19 +56,30 @@ export default function HomeFiyatListesi() {
 
   useEffect(() => {
     async function load() {
-      if (!supabase) { setLoading(false); return }
+      const staticItems: FiyatItem[] = FIXED_BRANDS.map((name, i) => ({
+        id: `static-${i}`,
+        firma: name,
+        logoUrl: '',
+        pdfUrl: '',
+        pdfName: '',
+      }))
+
+      if (!supabase) { setItems(staticItems); setLoading(false); return }
+
       const { data } = await supabase
         .from('fiyat_listesi')
         .select('*')
         .order('created_at', { ascending: true })
+
       if (data) {
-        setItems(data.map((r) => ({
-          id:      r.id,
-          firma:   r.firma,
-          logoUrl: r.logo_url  ?? '',
-          pdfUrl:  r.pdf_url   ?? '',
-          pdfName: r.pdf_name  ?? '',
-        })))
+        const supabaseMap = new Map(data.map((r) => [r.firma.toLowerCase(), r]))
+        setItems(staticItems.map((item) => {
+          const r = supabaseMap.get(item.firma.toLowerCase())
+          if (!r) return item
+          return { id: r.id, firma: item.firma, logoUrl: r.logo_url ?? '', pdfUrl: r.pdf_url ?? '', pdfName: r.pdf_name ?? '' }
+        }))
+      } else {
+        setItems(staticItems)
       }
       setLoading(false)
     }
