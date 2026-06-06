@@ -14,13 +14,13 @@ interface FiyatItem {
 
 const FIXED_BRANDS = [
   'Duyar',
-  'Çayırova',
-  'Vesbo',
+  'ÇayırovaBoru',
+  'Vesbo Boru Sistemleri',
   'Trakya Döküm',
   'Kas',
   'SARDOĞAN',
   'Ayvaz',
-  'Flamco',
+  'Paktermo',
   'Grundfos',
 ]
 
