@@ -238,12 +238,45 @@ export default function FiyatListesiDetay() {
                   </a>
                 </div>
 
-                {/* iframe */}
+                {/* Desktop: iframe */}
                 <iframe
+                  className="pdf-iframe"
                   src={`${item.pdfUrl}#toolbar=1&navpanes=0`}
                   style={{ width: '100%', height: '80vh', minHeight: '600px', border: 'none', display: 'block' }}
                   title={`${item.firma} Fiyat Listesi`}
                 />
+
+                {/* Mobil: indirme kartı */}
+                <div className="pdf-mobile-fallback" style={{
+                  display: 'none',
+                  flexDirection: 'column', alignItems: 'center', gap: '16px',
+                  padding: '48px 24px', textAlign: 'center',
+                  background: 'var(--bg-soft)', borderRadius: 'var(--r-lg)',
+                  border: '1px solid var(--line)',
+                }}>
+                  <div style={{ fontSize: '48px' }}>📄</div>
+                  <p style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '17px', color: 'var(--ink)' }}>
+                    PDF&apos;i görüntülemek için indirin
+                  </p>
+                  <p style={{ color: 'var(--ink-soft)', fontSize: '14.5px' }}>
+                    Mobil tarayıcılar PDF&apos;i doğrudan gösteremeyebilir.
+                  </p>
+                  <a
+                    href={item.pdfUrl}
+                    download={item.pdfName || `${item.firma}-fiyat-listesi.pdf`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: '8px',
+                      padding: '14px 28px', borderRadius: 'var(--r-pill)',
+                      background: 'var(--brand)', color: '#fff',
+                      fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '16px',
+                      textDecoration: 'none',
+                    }}
+                  >
+                    PDF İndir / Aç
+                  </a>
+                </div>
               </div>
             ) : (
               <div
@@ -279,6 +312,13 @@ export default function FiyatListesiDetay() {
         </section>
       </main>
       <Footer />
+
+      <style>{`
+        @media (max-width: 768px) {
+          .pdf-iframe          { display: none !important; }
+          .pdf-mobile-fallback { display: flex !important; }
+        }
+      `}</style>
     </>
   )
 }
