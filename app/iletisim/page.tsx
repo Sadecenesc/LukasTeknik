@@ -44,7 +44,7 @@ export default function IletisimPage() {
           <div className="container">
             <div style={{ borderRadius: 'var(--r-lg)', overflow: 'hidden', border: '1px solid var(--line)', height: '420px' }}>
               <iframe
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3010.8829486532863!2d28.850007200000004!3d41.0059351!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x14caa517d3c176d5%3A0xc6a8b49da17b93c0!2zTFVLQVNURUtOxLBLIE1FS0FOxLBLIEVORC5NQUxaLlNBTi5UxLBDLkxURC7FnlTEsA!5e0!3m2!1str!2str!4v1780594067643!5m2!1str!2str"
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3010.8829486532863!2d28.850007200000004!3d41.0059351!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x14caa517d3c176d5%3A0xc6a8b49da17b93c0!2zTFVLQVNURUtOxLBLIE1FS0FOxLBLIEVORC5NQUxaLlNBTi5UxLBDLkxURC7FnlTEsA!5e0!3m2!1str!2str!4v1780753141618!5m2!1str!2str"
                 width="100%"
                 height="100%"
                 style={{ border: 0, display: 'block' }}
