@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
+import { supabase } from '@/lib/supabase'
 
 const BLOG_CATS = ['Yangın', 'Pompa', 'Genel', 'Isıtma', 'Endüstriyel', 'Teknik', 'Vana', 'Kazan']
 
@@ -39,6 +40,7 @@ export default function EditBlogPage() {
   const [status, setStatus]         = useState<'Yayında' | 'Taslak'>('Taslak')
   const [coverImageUrl, setCoverImageUrl] = useState('')
   const [coverFileName, setCoverFileName] = useState('')
+  const [coverFile, setCoverFile]   = useState<File | null>(null)
   const [metaTitle, setMetaTitle]   = useState('')
   const [metaDesc, setMetaDesc]     = useState('')
 
@@ -50,21 +52,27 @@ export default function EditBlogPage() {
       router.replace('/admin'); return
     }
     setAuthed(true)
-    const items = JSON.parse(localStorage.getItem('lukas_blog_items') || '[]')
-    const post = items.find((b: { id: string }) => b.id === id)
-    if (!post) { setNotFound(true); return }
-    setTitle(post.title || '')
-    setSlug(post.slug || '')
-    setSlugManual(!!post.slug)
-    setExcerpt(post.excerpt || '')
-    setContent(post.content || '')
-    setCat(post.cat || 'Genel')
-    setTags(post.tags || '')
-    setDate(post.date || '')
-    setStatus(post.status || 'Taslak')
-    setCoverImageUrl(post.coverImageUrl || '')
-    setMetaTitle(post.metaTitle || '')
-    setMetaDesc(post.metaDesc || '')
+    if (!supabase) return
+    supabase
+      .from('blog_posts')
+      .select('*')
+      .eq('id', id)
+      .single()
+      .then(({ data }) => {
+        if (!data) { setNotFound(true); return }
+        setTitle(data.title || '')
+        setSlug(data.slug || '')
+        setSlugManual(!!data.slug)
+        setExcerpt(data.excerpt || '')
+        setContent(data.content || '')
+        setCat(data.category || 'Genel')
+        setTags(data.tags || '')
+        setDate(data.date || '')
+        setStatus(data.status || 'Taslak')
+        setCoverImageUrl(data.cover_url || '')
+        setMetaTitle(data.meta_title || '')
+        setMetaDesc(data.meta_desc || '')
+      })
   }, [router, id])
 
   useEffect(() => {
@@ -74,25 +82,34 @@ export default function EditBlogPage() {
   const handleCoverFile = useCallback((file: File) => {
     if (!file.type.startsWith('image/')) return
     setCoverFileName(file.name)
-    const reader = new FileReader()
-    reader.onload = () => setCoverImageUrl(reader.result as string)
-    reader.readAsDataURL(file)
+    setCoverFile(file)
+    setCoverImageUrl(URL.createObjectURL(file))
   }, [])
 
-  function doSave(publishStatus: 'Yayında' | 'Taslak') {
+  async function doSave(publishStatus: 'Yayında' | 'Taslak') {
+    if (!supabase) return
     setSaveState('saving')
-    const items = JSON.parse(localStorage.getItem('lukas_blog_items') || '[]')
-    const updated = items.map((b: { id: string }) =>
-      b.id === id
-        ? {
-            ...b, title: title.trim() || 'Başlıksız Yazı',
-            slug: slug.trim() || id, cat, tags, date,
-            status: publishStatus, content, excerpt, coverImageUrl,
-            metaTitle: metaTitle || title, metaDesc: metaDesc || excerpt,
-          }
-        : b
-    )
-    localStorage.setItem('lukas_blog_items', JSON.stringify(updated))
+
+    let coverUrl = coverImageUrl
+    if (coverFile) {
+      const ext = coverFile.name.split('.').pop()
+      const { data } = await supabase.storage.from('covers').upload(`${id}.${ext}`, coverFile, { upsert: true })
+      if (data) {
+        coverUrl = supabase.storage.from('covers').getPublicUrl(data.path).data.publicUrl
+      }
+    }
+
+    await supabase.from('blog_posts').update({
+      title: title.trim() || 'Başlıksız Yazı',
+      slug: slug.trim() || id,
+      category: cat, tags, date,
+      status: publishStatus, content, excerpt,
+      cover_url: coverUrl,
+      meta_title: metaTitle || title,
+      meta_desc: metaDesc || excerpt,
+      updated_at: new Date().toISOString(),
+    }).eq('id', id)
+
     setSaveState('saved')
     setTimeout(() => router.push('/admin?view=blog'), 900)
   }
@@ -261,7 +278,7 @@ export default function EditBlogPage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   {coverFileName && <span style={{ fontSize: '13.5px', color: 'var(--ink-soft)' }}>{coverFileName}</span>}
                   <button
-                    onClick={() => { setCoverImageUrl(''); setCoverFileName('') }}
+                    onClick={() => { setCoverImageUrl(''); setCoverFileName(''); setCoverFile(null) }}
                     style={{ padding: '5px 14px', borderRadius: '99px', border: '1px solid #e5e7eb', background: '#fff', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '12.5px', color: 'var(--ember)', cursor: 'pointer' }}
                   >
                     Kaldır

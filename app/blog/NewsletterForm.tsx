@@ -1,14 +1,21 @@
 'use client'
 
 import { useState } from 'react'
+import { supabase } from '@/lib/supabase'
 
 export default function NewsletterForm() {
   const [email, setEmail] = useState('')
   const [submitted, setSubmitted] = useState(false)
+  const [loading, setLoading] = useState(false)
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!email.trim()) return
+    setLoading(true)
+    if (supabase) {
+      await supabase.from('newsletter_subscribers').insert({ email: email.trim() })
+    }
+    setLoading(false)
     setSubmitted(true)
   }
 
@@ -37,9 +44,10 @@ export default function NewsletterForm() {
       />
       <button
         type="submit"
-        style={{ display: 'inline-flex', alignItems: 'center', padding: '15px 28px', borderRadius: 'var(--r-pill)', background: 'var(--brand)', color: '#fff', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '16px', border: 'none', cursor: 'pointer' }}
+        disabled={loading}
+        style={{ display: 'inline-flex', alignItems: 'center', padding: '15px 28px', borderRadius: 'var(--r-pill)', background: 'var(--brand)', color: '#fff', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '16px', border: 'none', cursor: loading ? 'default' : 'pointer', opacity: loading ? 0.7 : 1 }}
       >
-        Abone Ol
+        {loading ? 'Kaydediliyor…' : 'Abone Ol'}
       </button>
     </form>
   )

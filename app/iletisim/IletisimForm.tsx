@@ -14,8 +14,8 @@ const SITE = {
 const INFO_CARDS = [
   {
     title: 'Adres',
-    value: 'İkitelli OSB, Mekanik Sanayi Sitesi\nBaşakşehir / İstanbul',
-    href: '#',
+    value: 'Siyavuşpaşa, Köprübaşı Sk. No:29/A,\n34182 Bahçelievler/İstanbul',
+    href: 'https://maps.google.com/?q=Siyavuşpaşa+Köprübaşı+Sk+No+29+A+Bahçelievler+İstanbul',
     sub: null,
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: '24px', height: '24px' }}>

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
+import { supabase } from '@/lib/supabase'
 
 interface AdminPost {
   id: string
@@ -55,15 +56,30 @@ export default function DynamicBlogPost({ slug }: { slug: string }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem('lukas_blog_items')
-      if (stored) {
-        const items: AdminPost[] = JSON.parse(stored)
-        const found = items.find((item) => item.slug === slug)
-        if (found) setPost(found)
+    async function loadPost() {
+      if (!supabase) { setLoading(false); return }
+      const { data } = await supabase
+        .from('blog_posts')
+        .select('*')
+        .eq('slug', slug)
+        .single()
+      if (data) {
+        setPost({
+          id: data.id,
+          slug: data.slug,
+          title: data.title,
+          cat: data.category || 'Genel',
+          date: data.date || '',
+          status: data.status,
+          content: data.content || '',
+          excerpt: data.excerpt || '',
+          coverImageUrl: data.cover_url || '',
+          tags: data.tags || '',
+        })
       }
-    } catch {}
-    setLoading(false)
+      setLoading(false)
+    }
+    loadPost()
   }, [slug])
 
   if (loading) {

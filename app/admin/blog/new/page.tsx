@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { supabase } from '@/lib/supabase'
 
 const BLOG_CATS = ['Yangın', 'Pompa', 'Genel', 'Isıtma', 'Endüstriyel', 'Teknik', 'Vana', 'Kazan']
 
@@ -35,6 +36,7 @@ export default function NewBlogPage() {
   const [status, setStatus]         = useState<'Yayında' | 'Taslak'>('Taslak')
   const [coverImageUrl, setCoverImageUrl] = useState('')
   const [coverFileName, setCoverFileName] = useState('')
+  const [coverFile, setCoverFile]   = useState<File | null>(null)
   const [metaTitle, setMetaTitle]   = useState('')
   const [metaDesc, setMetaDesc]     = useState('')
 
@@ -56,28 +58,45 @@ export default function NewBlogPage() {
   const handleCoverFile = useCallback((file: File) => {
     if (!file.type.startsWith('image/')) return
     setCoverFileName(file.name)
-    const reader = new FileReader()
-    reader.onload = () => setCoverImageUrl(reader.result as string)
-    reader.readAsDataURL(file)
+    setCoverFile(file)
+    setCoverImageUrl(URL.createObjectURL(file))
   }, [])
 
-  function doSave(publishStatus: 'Yayında' | 'Taslak') {
+  async function doSave(publishStatus: 'Yayında' | 'Taslak') {
+    if (!supabase) return
     setSaveState('saving')
-    const items = JSON.parse(localStorage.getItem('lukas_blog_items') || '[]')
     const id = String(Date.now())
-    items.unshift({
+
+    let coverUrl = ''
+    if (coverFile) {
+      const ext = coverFile.name.split('.').pop()
+      const { data } = await supabase.storage.from('covers').upload(`${id}.${ext}`, coverFile, { upsert: true })
+      if (data) {
+        coverUrl = supabase.storage.from('covers').getPublicUrl(data.path).data.publicUrl
+      }
+    }
+
+    const { error } = await supabase.from('blog_posts').insert({
       id,
       title: title.trim() || 'Başlıksız Yazı',
       slug: slug.trim() || id,
-      cat, tags, date,
+      content,
+      excerpt,
+      category: cat,
+      tags,
+      date,
       status: publishStatus,
-      content, excerpt, coverImageUrl,
-      metaTitle: metaTitle || title,
-      metaDesc: metaDesc || excerpt,
+      cover_url: coverUrl,
+      meta_title: metaTitle || title,
+      meta_desc: metaDesc || excerpt,
     })
-    localStorage.setItem('lukas_blog_items', JSON.stringify(items))
-    setSaveState('saved')
-    setTimeout(() => router.push('/admin?view=blog'), 900)
+
+    if (!error) {
+      setSaveState('saved')
+      setTimeout(() => router.push('/admin?view=blog'), 900)
+    } else {
+      setSaveState('idle')
+    }
   }
 
   if (!authed) return null
@@ -152,6 +171,12 @@ export default function NewBlogPage() {
         <p style={{ fontSize: '14.5px', color: 'var(--ink-soft)', marginBottom: '28px' }}>
           Yeni bir blog yazısı oluşturun.
         </p>
+
+        {!supabase && (
+          <div style={{ background: '#fff3cd', border: '1px solid #ffc107', borderRadius: '8px', padding: '12px 18px', marginBottom: '20px', fontSize: '14px', fontFamily: 'var(--font-display)', color: '#856404' }}>
+            ⚠️ Supabase bağlantısı yok — yazılar kaydedilemez.
+          </div>
+        )}
 
         {/* ── Form card ── */}
         <div style={{
@@ -269,7 +294,7 @@ export default function NewBlogPage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <span style={{ fontSize: '13.5px', color: 'var(--ink-soft)' }}>{coverFileName}</span>
                   <button
-                    onClick={() => { setCoverImageUrl(''); setCoverFileName('') }}
+                    onClick={() => { setCoverImageUrl(''); setCoverFileName(''); setCoverFile(null) }}
                     style={{
                       padding: '5px 14px', borderRadius: '99px', border: '1px solid #e5e7eb',
                       background: '#fff', fontFamily: 'var(--font-display)', fontWeight: 600,
@@ -355,7 +380,7 @@ export default function NewBlogPage() {
             </Link>
             <button
               onClick={() => doSave(status)}
-              disabled={saveState !== 'idle'}
+              disabled={saveState !== 'idle' || !supabase}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: '8px',
                 padding: '11px 32px', borderRadius: '99px',

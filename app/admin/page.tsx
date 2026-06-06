@@ -37,6 +37,7 @@ interface FiyatItem {
 
 interface BlogItem {
   id: string
+  slug: string
   title: string
   cat: string
   date: string
@@ -117,11 +118,6 @@ const LOGO2WEB_LOGOS = [
 
 const ALL_LOGOS = [...LOGOWEB_LOGOS, ...LOGO2WEB_LOGOS]
 
-const INITIAL_BLOG: BlogItem[] = [
-  { id: 'b1', title: 'Sprinkler sistemlerde doğru vana seçimi', cat: 'Yangın',  date: '14 Mayıs 2026',  status: 'Yayında' },
-  { id: 'b2', title: 'Hidrofor grubu boyutlandırma rehberi',    cat: 'Pompa',   date: '28 Nisan 2026',  status: 'Yayında' },
-  { id: 'b3', title: 'TSE ve CE belgelendirmesi',               cat: 'Genel',   date: '10 Nisan 2026',  status: 'Taslak'  },
-]
 
 function NavIcon({ icon }: { icon: string }) {
   const s: React.CSSProperties = { width: '19px', height: '19px', flexShrink: 0 }
@@ -230,7 +226,7 @@ function AdminInner() {
   const editPdfRef = useRef<HTMLInputElement>(null)
 
   // Blog
-  const [blogItems] = useState<BlogItem[]>(INITIAL_BLOG)
+  const [blogItems, setBlogItems] = useState<BlogItem[]>([])
 
   // Sosyal medya
   const [instagram, setInstagram] = useState('')
@@ -259,6 +255,22 @@ function AdminInner() {
         })))
       }
       setFiyatLoading(false)
+
+      // Blog yazıları
+      const { data: blogData } = await supabase
+        .from('blog_posts')
+        .select('id, slug, title, category, date, status')
+        .order('created_at', { ascending: false })
+      if (blogData) {
+        setBlogItems(blogData.map((r) => ({
+          id:     r.id,
+          slug:   r.slug,
+          title:  r.title,
+          cat:    r.category || 'Genel',
+          date:   r.date || '',
+          status: r.status === 'Yayında' ? 'Yayında' : 'Taslak',
+        })))
+      }
 
       // Sosyal medya linkleri
       const { data: settingsData } = await supabase
@@ -368,6 +380,13 @@ function AdminInner() {
     setFiyatListesi((prev) => prev.map((f) => f.id === item.id ? { ...f, firma: editFirma, logoUrl, pdfUrl, pdfName } : f))
     setEditingFiyatId(null)
     setFiyatUploading(false)
+  }
+
+  // ── Blog sil ─────────────────────────────────────────────────────────────
+  async function removeBlogItem(id: string) {
+    if (!supabase) return
+    await supabase.from('blog_posts').delete().eq('id', id)
+    setBlogItems((prev) => prev.filter((b) => b.id !== id))
   }
 
   // ── Sosyal medya kaydet ───────────────────────────────────────────────────
@@ -707,7 +726,11 @@ function AdminInner() {
                   </Link>
                 </div>
                 <div style={{ background: '#fff', border: '1px solid var(--line)', borderRadius: 'var(--r-lg)', overflow: 'hidden' }}>
-                  {blogItems.map((b, i) => (
+                  {blogItems.length === 0 ? (
+                    <div style={{ padding: '40px', textAlign: 'center', color: 'var(--ink-faint)', fontSize: '14.5px', fontFamily: 'var(--font-display)' }}>
+                      Henüz blog yazısı eklenmedi.
+                    </div>
+                  ) : blogItems.map((b, i) => (
                     <div key={b.id} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '14px 20px', borderTop: i > 0 ? '1px solid var(--line)' : undefined }}>
                       <div style={{ width: '56px', height: '42px', borderRadius: '8px', flexShrink: 0, background: 'var(--brand-tint)', overflow: 'hidden', display: 'grid', placeItems: 'center' }}>
                         <span style={{ fontSize: '20px' }}>📰</span>
@@ -719,6 +742,7 @@ function AdminInner() {
                       <span style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '12px', padding: '3px 10px', borderRadius: 'var(--r-pill)', flexShrink: 0, ...TAG_STYLE[b.status === 'Yayında' ? 'done' : 'prog'] }}>{b.status}</span>
                       <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
                         <Link href={`/admin/blog/${b.id}`} style={{ padding: '5px 13px', borderRadius: 'var(--r-sm)', border: '1px solid var(--brand)', background: 'var(--brand-tint)', color: 'var(--brand-700)', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '12px', textDecoration: 'none' }}>Düzenle</Link>
+                        <button onClick={() => removeBlogItem(b.id)} style={{ padding: '5px 13px', borderRadius: 'var(--r-sm)', border: '1px solid var(--ember)', background: 'var(--ember-tint)', color: 'var(--ember)', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}>Sil</button>
                       </div>
                     </div>
                   ))}

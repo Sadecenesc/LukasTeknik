@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabase'
 
 const DEFAULT_WA = '905056995245'
 const WA_MSG = encodeURIComponent('Merhaba, ürün ve fiyat bilgisi almak istiyorum.')
@@ -9,11 +10,16 @@ export default function WhatsAppFloat() {
   const [href, setHref] = useState(`https://wa.me/${DEFAULT_WA}?text=${WA_MSG}`)
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('lukas_social_links')
-      const p = saved ? JSON.parse(saved) : {}
-      localStorage.setItem('lukas_social_links', JSON.stringify({ ...p, whatsapp: DEFAULT_WA }))
-    } catch {}
+    if (!supabase) return
+    supabase
+      .from('site_settings')
+      .select('value')
+      .eq('key', 'whatsapp')
+      .single()
+      .then(({ data }) => {
+        const num = data?.value || DEFAULT_WA
+        setHref(`https://wa.me/${num}?text=${WA_MSG}`)
+      })
   }, [])
 
   return (

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { supabase } from '@/lib/supabase'
 
 interface Post {
   slug: string
@@ -101,24 +102,26 @@ export default function BlogList() {
   const [adminPosts, setAdminPosts] = useState<Post[]>([])
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem('lukas_blog_items')
-      if (!stored) return
-      const items: Record<string, unknown>[] = JSON.parse(stored)
-      const str = (v: unknown, fb = '') => (typeof v === 'string' ? v : fb)
-      const published: Post[] = items
-        .filter((item) => item.status === 'Yayında' && item.slug)
-        .map((item) => ({
-          slug: str(item.slug),
-          cat: str(item.cat, 'Genel'),
-          title: str(item.title, 'Başlıksız'),
-          date: str(item.date),
-          readTime: estimateReadTime(str(item.content)),
-          excerpt: str(item.excerpt),
-          img: str(item.coverImageUrl, FALLBACK_IMG),
-        }))
-      setAdminPosts(published)
-    } catch {}
+    async function loadPosts() {
+      if (!supabase) return
+      const { data } = await supabase
+        .from('blog_posts')
+        .select('*')
+        .eq('status', 'Yayında')
+        .order('created_at', { ascending: false })
+      if (data) {
+        setAdminPosts(data.map((r) => ({
+          slug: r.slug,
+          cat: r.category || 'Genel',
+          title: r.title,
+          date: r.date || '',
+          readTime: estimateReadTime(r.content || ''),
+          excerpt: r.excerpt || '',
+          img: r.cover_url || FALLBACK_IMG,
+        })))
+      }
+    }
+    loadPosts()
   }, [])
 
   const allPosts = [...adminPosts, ...STATIC_POSTS]
