@@ -539,6 +539,43 @@ function AdminInner() {
                     )}
                   </div>
 
+                  {/* Bilgisayardan logo yükle */}
+                  <div style={{ marginBottom: '20px' }}>
+                    <label style={{ display: 'block', fontFamily: 'var(--font-display)', fontWeight: 500, fontSize: '13px', marginBottom: '8px', color: 'var(--ink-2)' }}>
+                      veya bilgisayardan logo yükle
+                    </label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                      <label style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', padding: '11px 14px', border: `1px dashed ${yeniLogoFile ? 'var(--brand)' : 'var(--line-2)'}`, borderRadius: 'var(--r-sm)', cursor: 'pointer', background: yeniLogoFile ? 'var(--brand-tint)' : '#fff' }}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: '16px', height: '16px', color: 'var(--brand-700)', flexShrink: 0 }}>
+                          <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" />
+                        </svg>
+                        <span style={{ fontSize: '13.5px', color: yeniLogoFile ? 'var(--brand-700)' : 'var(--ink-soft)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '200px' }}>
+                          {yeniLogoFile ? yeniLogoFile.name : 'Görsel seç… (PNG, JPG, WEBP, SVG)'}
+                        </span>
+                        <input
+                          ref={logoInputRef}
+                          type="file"
+                          accept="image/*"
+                          style={{ display: 'none' }}
+                          onChange={(e) => {
+                            const f = e.target.files?.[0] ?? null
+                            setYeniLogoFile(f)
+                            if (f) setSelectedLogoFile(null)
+                          }}
+                        />
+                      </label>
+                      {yeniLogoFile && (
+                        <>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={URL.createObjectURL(yeniLogoFile)} alt="önizleme" style={{ height: '48px', maxWidth: '120px', objectFit: 'contain', border: '1px solid var(--line)', borderRadius: 'var(--r-sm)', padding: '4px', background: '#fff' }} />
+                          <button type="button" onClick={() => { setYeniLogoFile(null); if (logoInputRef.current) logoInputRef.current.value = '' }} style={{ fontSize: '12px', color: 'var(--ink-faint)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-display)', padding: 0 }}>
+                            ✕ Kaldır
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
                   {/* Firma adı */}
                   <div style={{ marginBottom: '16px' }}>
                     <label style={{ display: 'block', fontFamily: 'var(--font-display)', fontWeight: 500, fontSize: '13px', marginBottom: '7px', color: 'var(--ink-2)' }}>Firma İsmi <span style={{ color: 'var(--ember)' }}>*</span></label>
@@ -597,10 +634,16 @@ function AdminInner() {
                                 <input value={editFirma} onChange={(e) => setEditFirma(e.target.value)} style={{ ...inputSt, maxWidth: '200px', padding: '8px 10px', fontSize: '14px' }} />
                               </td>
                               <td style={tdStyle}>
-                                <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '7px 12px', border: '1px dashed var(--line-2)', borderRadius: 'var(--r-sm)', cursor: 'pointer', fontSize: '13px', color: editLogoFile ? 'var(--brand-700)' : 'var(--ink-soft)', background: '#fff', whiteSpace: 'nowrap' }}>
-                                  {editLogoFile ? editLogoFile.name : 'Logo değiştir…'}
-                                  <input ref={editLogoRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => setEditLogoFile(e.target.files?.[0] ?? null)} />
-                                </label>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '7px 12px', border: '1px dashed var(--line-2)', borderRadius: 'var(--r-sm)', cursor: 'pointer', fontSize: '13px', color: editLogoFile ? 'var(--brand-700)' : 'var(--ink-soft)', background: '#fff', whiteSpace: 'nowrap' }}>
+                                    {editLogoFile ? editLogoFile.name : 'Logo değiştir…'}
+                                    <input ref={editLogoRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => setEditLogoFile(e.target.files?.[0] ?? null)} />
+                                  </label>
+                                  {editLogoFile && (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img src={URL.createObjectURL(editLogoFile)} alt="önizleme" style={{ height: '36px', maxWidth: '80px', objectFit: 'contain', border: '1px solid var(--line)', borderRadius: '4px', padding: '2px', background: '#fff' }} />
+                                  )}
+                                </div>
                               </td>
                               <td style={tdStyle}>
                                 <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '7px 12px', border: '1px dashed var(--line-2)', borderRadius: 'var(--r-sm)', cursor: 'pointer', fontSize: '13px', color: editPdfFile ? 'var(--brand-700)' : 'var(--ink-soft)', background: '#fff', whiteSpace: 'nowrap' }}>
