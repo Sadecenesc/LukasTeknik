@@ -24,7 +24,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return [
     { url: BASE,                        lastModified: now, changeFrequency: 'weekly',  priority: 1.0 },
     { url: `${BASE}/hakkimizda`,        lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
-    { url: `${BASE}/fiyat-listesi`,     lastModified: now, changeFrequency: 'weekly',  priority: 0.9 },
+    { url: `${BASE}/fiyat-listeleri`,     lastModified: now, changeFrequency: 'weekly',  priority: 0.9 },
     { url: `${BASE}/blog`,              lastModified: now, changeFrequency: 'weekly',  priority: 0.8 },
     { url: `${BASE}/iletisim`,          lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
     { url: `${BASE}/referanslar`,       lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
@@ -38,7 +38,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.7,
     })),
     ...FIYAT_SLUGS.map((slug) => ({
-      url: `${BASE}/fiyat-listesi/${slug}`,
+      url: `${BASE}/fiyat-listeleri/${slug}`,
       lastModified: now,
       changeFrequency: 'monthly' as const,
       priority: 0.6,

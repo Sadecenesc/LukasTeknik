@@ -186,9 +186,14 @@ body {
 }
 
 /* ---- Headings ---- */
-.h1 { font-family: var(--font-display); font-weight: 800; letter-spacing: -.03em; }
-.h2 { font-family: var(--font-display); font-weight: 700; font-size: clamp(28px, 4vw, 42px); letter-spacing: -.025em; }
-.h3 { font-family: var(--font-display); font-weight: 600; font-size: 20px; }
+h1, h2, h3 { text-transform: uppercase; }
+h1 { font-size: 1.35rem; }
+h2 { font-size: 1.1rem; }
+h3 { font-size: 0.95rem; }
+
+.h1 { font-family: var(--font-display); font-weight: 800; font-size: 1.35rem; letter-spacing: -.03em; text-transform: uppercase; }
+.h2 { font-family: var(--font-display); font-weight: 700; font-size: 1.1rem; letter-spacing: -.025em; text-transform: uppercase; }
+.h3 { font-family: var(--font-display); font-weight: 600; font-size: 0.95rem; text-transform: uppercase; }
 
 /* ---- Responsive ---- */
 @media (max-width: 768px) {

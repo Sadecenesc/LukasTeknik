@@ -69,7 +69,7 @@ export default function HomeFiyatListesi() {
       const { data } = await supabase
         .from('fiyat_listesi')
         .select('*')
-        .order('created_at', { ascending: true })
+        .order('sira', { ascending: true })
 
       if (data) {
         const supabaseMap = new Map(data.map((r) => [r.firma.toLowerCase(), r]))
@@ -156,7 +156,7 @@ export default function HomeFiyatListesi() {
               style={{ flex: `0 0 ${cardW}%`, padding: '0 10px', boxSizing: 'border-box' }}
             >
               <Link
-                href={`/fiyat-listesi/${toSlug(item.firma)}`}
+                href={`/fiyat-listeleri/${toSlug(item.firma)}`}
                 draggable={false}
                 style={{
                   display: 'block',

@@ -32,7 +32,7 @@ export default function FiyatListesiDetay() {
   useEffect(() => {
     async function load() {
       if (!supabase) { setLoading(false); return }
-      const { data } = await supabase.from('fiyat_listesi').select('*')
+      const { data } = await supabase.from('fiyat_listesi').select('*').order('sira', { ascending: true })
       if (data) {
         const found = data.find((r) => toSlug(r.firma) === slug) ?? null
         if (found) {
@@ -88,12 +88,12 @@ export default function FiyatListesiDetay() {
             textAlign: 'center',
           }}
         >
-          <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '28px' }}>Marka bulunamadı</h1>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '28px', textTransform: 'none' }}>Marka bulunamadı</h1>
           <p style={{ color: 'var(--ink-soft)', fontSize: '17px' }}>
             Bu markaya ait fiyat listesi henüz eklenmemiş.
           </p>
           <Link
-            href="/fiyat-listesi"
+            href="/fiyat-listeleri"
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -140,7 +140,7 @@ export default function FiyatListesiDetay() {
             >
               <Link href="/" style={{ color: 'var(--ink-soft)', textDecoration: 'none' }}>Ana Sayfa</Link>
               <span>/</span>
-              <Link href="/fiyat-listesi" style={{ color: 'var(--ink-soft)', textDecoration: 'none' }}>Fiyat Listeleri</Link>
+              <Link href="/fiyat-listeleri" style={{ color: 'var(--ink-soft)', textDecoration: 'none' }}>Fiyat Listeleri</Link>
               <span>/</span>
               <span style={{ color: 'var(--ink)' }}>{item.firma}</span>
             </div>
@@ -181,6 +181,7 @@ export default function FiyatListesiDetay() {
                     fontSize: 'clamp(22px,3vw,30px)',
                     color: 'var(--ink)',
                     lineHeight: 1.15,
+                    textTransform: 'none',
                   }}
                 >
                   {item.firma} Fiyat Listesi
@@ -295,7 +296,7 @@ export default function FiyatListesiDetay() {
                     <polyline points="10 9 9 9 8 9" />
                   </svg>
                 </div>
-                <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '22px' }}>PDF henüz yüklenmedi</h2>
+                <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '22px', textTransform: 'none' }}>PDF henüz yüklenmedi</h2>
                 <p style={{ color: 'var(--ink-soft)', fontSize: '16px', maxWidth: '480px', lineHeight: 1.6 }}>
                   {item.firma} için güncel fiyat listesi PDF&apos;i yakında eklenecektir.
                   Fiyat bilgisi için bizimle iletişime geçin.

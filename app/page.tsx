@@ -85,7 +85,7 @@ export default function Home() {
             <div style={{ display: 'grid', gridTemplateColumns: '1.05fr .95fr', gap: '60px', alignItems: 'center', padding: '84px 0 76px' }} className="hero-grid">
               <div>
                 <span className="section-label">Mekanik Tesisat & Endüstriyel Çözüm Merkezi</span>
-                <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'clamp(38px,5.2vw,62px)', letterSpacing: '-.03em', marginTop: '20px', lineHeight: 1.1 }}>
+                <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'clamp(28px,3.8vw,46px)', letterSpacing: '-.03em', marginTop: '20px', lineHeight: 1.1 }}>
                   Mekanik tesisat ve endüstriyel sistemlerde{' '}
                   <span style={{ color: 'var(--brand-700)' }}>güvenilir çözüm ortağınız</span>
                 </h1>
@@ -252,7 +252,7 @@ export default function Home() {
                   Türkiye distribütörü olduğumuz markaların PDF fiyat listelerine anında ulaşın.
                 </p>
               </div>
-              <Link href="/fiyat-listesi" className="btn btn-outline">Tüm Listeler</Link>
+              <Link href="/fiyat-listeleri" className="btn btn-outline">Tüm Listeler</Link>
             </div>
             <HomeFiyatListesi />
           </div>

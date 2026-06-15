@@ -12,14 +12,14 @@ export const metadata: Metadata = {
     title: 'Fiyat Listeleri — Lukas Teknik',
     description:
       'Mekanik tesisat markalarının güncel PDF fiyat listeleri. Flamco, Grundfos, Honeywell, Danfoss ve daha fazlası.',
-    url: 'https://www.lukasteknik.com/fiyat-listesi',
+    url: 'https://www.lukasteknik.com/fiyat-listeleri',
     images: [{
       url: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=1200&q=85&fit=crop',
       width: 1200, height: 630,
-      alt: 'Lukas Teknik Fiyat Listesi',
+      alt: 'Lukas Teknik Fiyat Listeleri',
     }],
   },
-  alternates: { canonical: 'https://www.lukasteknik.com/fiyat-listesi' },
+  alternates: { canonical: 'https://www.lukasteknik.com/fiyat-listeleri' },
 }
 
 export default function FiyatListesiPage() {

@@ -10,6 +10,20 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async redirects() {
+    return [
+      {
+        source: '/fiyat-listesi',
+        destination: '/fiyat-listeleri',
+        permanent: true,
+      },
+      {
+        source: '/fiyat-listesi/:slug',
+        destination: '/fiyat-listeleri/:slug',
+        permanent: true,
+      },
+    ]
+  },
 }
 
 export default nextConfig

@@ -30,7 +30,7 @@ export default function FiyatListesi() {
       const { data } = await supabase
         .from('fiyat_listesi')
         .select('*')
-        .order('created_at', { ascending: true })
+        .order('sira', { ascending: true })
       if (data) {
         setItems(data.map((r) => ({
           id:       r.id,
@@ -47,6 +47,21 @@ export default function FiyatListesi() {
 
   return (
     <>
+      <style>{`
+        .fiyat-grid {
+          display: grid;
+          grid-template-columns: repeat(6, 1fr);
+          gap: 14px;
+          margin-bottom: 56px;
+        }
+        @media (max-width: 900px) {
+          .fiyat-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+        @media (max-width: 480px) {
+          .fiyat-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+      `}</style>
+
       {/* Grid header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '28px', flexWrap: 'wrap', gap: '12px' }}>
         <p style={{ fontSize: '15px', color: 'var(--ink-soft)', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -79,14 +94,7 @@ export default function FiyatListesi() {
 
       {/* Brand grid */}
       {!loading && items.length > 0 && (
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-            gap: '20px',
-            marginBottom: '56px',
-          }}
-        >
+        <div className="fiyat-grid">
           {items.map((item) => (
             <BrandCard key={item.id} item={item} />
           ))}
@@ -111,7 +119,7 @@ export default function FiyatListesi() {
             <span style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '13px', letterSpacing: '.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,.6)', display: 'block', marginBottom: '12px' }}>
               Aradığınızı bulamadınız mı?
             </span>
-            <h2 style={{ color: '#fff', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'clamp(22px,3.2vw,32px)', lineHeight: 1.2 }}>
+            <h2 style={{ color: '#fff', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'clamp(22px,3.2vw,32px)', lineHeight: 1.2, textTransform: 'none' }}>
               Listede olmayan marka için<br />net teklif alın
             </h2>
             <p style={{ color: 'rgba(255,255,255,.7)', marginTop: '12px', fontSize: '16px', lineHeight: 1.6 }}>
@@ -147,13 +155,13 @@ export default function FiyatListesi() {
 function BrandCard({ item }: { item: FiyatItem }) {
   return (
     <Link
-      href={`/fiyat-listesi/${toSlug(item.firma)}`}
+      href={`/fiyat-listeleri/${toSlug(item.firma)}`}
       style={{
         display: 'flex',
         flexDirection: 'column',
         background: '#fff',
         border: '1px solid var(--line)',
-        borderRadius: 'var(--r-lg)',
+        borderRadius: 'var(--r)',
         overflow: 'hidden',
         textDecoration: 'none',
         transition: 'box-shadow .2s, transform .2s, border-color .2s',
@@ -161,7 +169,7 @@ function BrandCard({ item }: { item: FiyatItem }) {
       onMouseEnter={(e) => {
         const el = e.currentTarget as HTMLAnchorElement
         el.style.boxShadow = 'var(--shadow-md)'
-        el.style.transform = 'translateY(-3px)'
+        el.style.transform = 'translateY(-2px)'
         el.style.borderColor = 'var(--brand-tint-2)'
       }}
       onMouseLeave={(e) => {
@@ -188,7 +196,7 @@ function BrandCard({ item }: { item: FiyatItem }) {
               position: 'absolute', inset: 0,
               width: '100%', height: '100%',
               objectFit: 'contain',
-              padding: '14px',
+              padding: '8px',
               boxSizing: 'border-box',
               mixBlendMode: 'multiply',
             }}
@@ -200,7 +208,7 @@ function BrandCard({ item }: { item: FiyatItem }) {
           }}>
             <span style={{
               fontFamily: 'var(--font-display)', fontWeight: 800,
-              fontSize: '38px', color: 'var(--brand-700)',
+              fontSize: '24px', color: 'var(--brand-700)',
               letterSpacing: '-.02em',
             }}>
               {initials(item.firma)}
@@ -210,20 +218,20 @@ function BrandCard({ item }: { item: FiyatItem }) {
 
         {item.pdfName ? (
           <span style={{
-            position: 'absolute', top: '10px', right: '10px',
+            position: 'absolute', top: '6px', right: '6px',
             background: 'var(--brand)', color: '#fff',
-            fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '10.5px',
-            padding: '3px 9px', borderRadius: '99px',
+            fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '9px',
+            padding: '2px 7px', borderRadius: '99px',
             letterSpacing: '.04em',
           }}>
             PDF
           </span>
         ) : (
           <span style={{
-            position: 'absolute', top: '10px', right: '10px',
+            position: 'absolute', top: '6px', right: '6px',
             background: 'var(--line-2)', color: 'var(--ink-faint)',
-            fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '10.5px',
-            padding: '3px 9px', borderRadius: '99px',
+            fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '9px',
+            padding: '2px 7px', borderRadius: '99px',
           }}>
             Yakında
           </span>
@@ -232,27 +240,27 @@ function BrandCard({ item }: { item: FiyatItem }) {
 
       {/* Footer */}
       <div style={{
-        padding: '14px 18px',
+        padding: '8px 10px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        gap: '8px',
+        gap: '4px',
       }}>
         <span style={{
           fontFamily: 'var(--font-display)', fontWeight: 700,
-          fontSize: '14.5px', color: 'var(--ink)',
+          fontSize: '11.5px', color: 'var(--ink)',
           lineHeight: 1.25,
         }}>
           {item.firma}
         </span>
         <span style={{
-          display: 'flex', alignItems: 'center', gap: '3px',
-          fontSize: '12px', color: 'var(--brand-700)',
+          display: 'flex', alignItems: 'center', gap: '2px',
+          fontSize: '10px', color: 'var(--brand-700)',
           fontFamily: 'var(--font-display)', fontWeight: 600,
           flexShrink: 0,
         }}>
           İncele
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '12px', height: '12px' }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '10px', height: '10px' }}>
             <path d="m9 18 6-6-6-6" />
           </svg>
         </span>

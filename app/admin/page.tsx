@@ -247,7 +247,7 @@ function AdminInner() {
       const { data: fiyatData } = await supabase
         .from('fiyat_listesi')
         .select('*')
-        .order('created_at', { ascending: true })
+        .order('sira', { ascending: true })
       if (fiyatData) {
         setFiyatListesi(fiyatData.map((r) => ({
           id:      r.id,

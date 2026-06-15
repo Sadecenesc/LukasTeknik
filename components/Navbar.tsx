@@ -16,7 +16,7 @@ const SITE = {
 const MENU = [
   { id: 'anasayfa', label: 'Ana Sayfa', href: '/' },
   { id: 'hakkimizda', label: 'Hakkımızda', href: '/hakkimizda' },
-  { id: 'fiyat', label: 'Fiyat Listesi', href: '/fiyat-listesi' },
+  { id: 'fiyat', label: 'Fiyat Listeleri', href: '/fiyat-listeleri' },
   { id: 'blog', label: 'Blog', href: '/blog' },
   { id: 'iletisim', label: 'İletişim', href: '/iletisim' },
 ]

@@ -17,17 +17,17 @@ const SITE = {
 const MENU = [
   { label: 'Ana Sayfa', href: '/' },
   { label: 'Hakkımızda', href: '/hakkimizda' },
-  { label: 'Fiyat Listesi', href: '/fiyat-listesi' },
+  { label: 'Fiyat Listeleri', href: '/fiyat-listeleri' },
   { label: 'Blog', href: '/blog' },
   { label: 'İletişim', href: '/iletisim' },
 ]
 
 const SOLUTIONS = [
-  { label: 'Yangın Söndürme Sistemleri', href: '/fiyat-listesi' },
-  { label: 'Pompa & Hidrofor Sistemleri', href: '/fiyat-listesi' },
-  { label: 'Vana & Bağlantı Elemanları', href: '/fiyat-listesi' },
-  { label: 'Kazan & Isıtma Sistemleri', href: '/fiyat-listesi' },
-  { label: 'İklimlendirme & Soğutma', href: '/fiyat-listesi' },
+  { label: 'Yangın Söndürme Sistemleri', href: '/fiyat-listeleri' },
+  { label: 'Pompa & Hidrofor Sistemleri', href: '/fiyat-listeleri' },
+  { label: 'Vana & Bağlantı Elemanları', href: '/fiyat-listeleri' },
+  { label: 'Kazan & Isıtma Sistemleri', href: '/fiyat-listeleri' },
+  { label: 'İklimlendirme & Soğutma', href: '/fiyat-listeleri' },
   { label: 'Proje Danışmanlığı', href: '/iletisim' },
 ]
 
