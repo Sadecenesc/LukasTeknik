@@ -203,6 +203,7 @@ function AdminInner() {
   // View
   const searchParams = useSearchParams()
   const [view, setView] = useState<View>('dashboard')
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
   useEffect(() => {
     const v = searchParams.get('view') as View | null
     if (v && ['dashboard', 'fiyat-listesi', 'blog', 'sosyal-medya'].includes(v)) setView(v)
@@ -411,10 +412,31 @@ function AdminInner() {
     <>
       <div style={{ display: 'grid', gridTemplateColumns: '264px 1fr', minHeight: '100vh', background: 'var(--bg-soft)' }} className="admin-layout">
 
+        {/* Mobile backdrop */}
+        {mobileNavOpen && (
+          <div
+            className="admin-backdrop"
+            onClick={() => setMobileNavOpen(false)}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.4)', zIndex: 199 }}
+          />
+        )}
+
         {/* Sidebar */}
-        <aside style={{ background: 'var(--ink)', color: '#c3cac3', padding: '22px 18px', display: 'flex', flexDirection: 'column', position: 'sticky', top: 0, height: '100vh', overflowY: 'auto' }}>
-          <div style={{ background: '#fff', padding: '12px 14px', borderRadius: 'var(--r)', marginBottom: '8px' }}>
-            <Image src="/assets/logo.webp" alt="Lukas Teknik" width={120} height={34} style={{ objectFit: 'contain' }} />
+        <aside className={`admin-sidebar${mobileNavOpen ? ' admin-sidebar-open' : ''}`} style={{ background: 'var(--ink)', color: '#c3cac3', padding: '22px 18px', display: 'flex', flexDirection: 'column', position: 'sticky', top: 0, height: '100vh', overflowY: 'auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+            <div style={{ background: '#fff', padding: '12px 14px', borderRadius: 'var(--r)' }}>
+              <Image src="/assets/logo.webp" alt="Lukas Teknik" width={120} height={34} style={{ objectFit: 'contain' }} />
+            </div>
+            <button
+              className="admin-sidebar-close"
+              aria-label="Menüyü kapat"
+              onClick={() => setMobileNavOpen(false)}
+              style={{ display: 'none', background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#fff' }}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ width: '22px', height: '22px' }}>
+                <path d="M18 6 6 18M6 6l12 12" />
+              </svg>
+            </button>
           </div>
           <div style={{ fontSize: '12px', color: '#7f877f', padding: '0 6px 18px', borderBottom: '1px solid rgba(255,255,255,.1)', marginBottom: '16px', letterSpacing: '.04em', fontFamily: 'var(--font-display)' }}>
             YÖNETİM PANELİ
@@ -424,7 +446,7 @@ function AdminInner() {
             {NAV_ITEMS.map((item) => (
               <button
                 key={item.view}
-                onClick={() => setView(item.view)}
+                onClick={() => { setView(item.view); setMobileNavOpen(false) }}
                 style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '11px 12px', borderRadius: 'var(--r-sm)', fontFamily: 'var(--font-display)', fontWeight: 500, fontSize: '14.5px', color: view === item.view ? '#fff' : '#c3cac3', background: view === item.view ? 'var(--brand)' : 'transparent', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left', marginBottom: '2px', transition: 'background .16s' }}
               >
                 <NavIcon icon={item.icon} />
@@ -433,7 +455,7 @@ function AdminInner() {
             ))}
           </nav>
           <div style={{ paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,.1)' }}>
-            <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '11px 12px', borderRadius: 'var(--r-sm)', fontFamily: 'var(--font-display)', fontWeight: 500, fontSize: '14.5px', color: '#c3cac3', textDecoration: 'none', marginBottom: '4px' }}>
+            <Link href="/" onClick={() => setMobileNavOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '11px 12px', borderRadius: 'var(--r-sm)', fontFamily: 'var(--font-display)', fontWeight: 500, fontSize: '14.5px', color: '#c3cac3', textDecoration: 'none', marginBottom: '4px' }}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ width: '19px', height: '19px' }}>
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
               </svg>
@@ -457,11 +479,21 @@ function AdminInner() {
 
         {/* Main */}
         <div style={{ overflow: 'hidden' }}>
-          <header style={{ background: '#fff', borderBottom: '1px solid var(--line)', padding: '18px 32px', display: 'flex', alignItems: 'center', gap: '20px', position: 'sticky', top: 0, zIndex: 20 }}>
+          <header className="admin-header" style={{ background: '#fff', borderBottom: '1px solid var(--line)', padding: '18px 32px', display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap', position: 'sticky', top: 0, zIndex: 20 }}>
+            <button
+              className="admin-menu-btn"
+              aria-label="Menü"
+              onClick={() => setMobileNavOpen(true)}
+              style={{ display: 'none', background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: 'var(--ink)' }}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ width: '22px', height: '22px' }}>
+                <path d="M3 6h18M3 12h18M3 18h18" />
+              </svg>
+            </button>
             <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '22px', fontWeight: 700 }}>
               {NAV_ITEMS.find((n) => n.view === view)?.label ?? 'Genel Bakış'}
             </h1>
-            <div style={{ marginLeft: 'auto', position: 'relative' }}>
+            <div className="admin-search" style={{ marginLeft: 'auto', position: 'relative' }}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', width: '17px', height: '17px', color: 'var(--ink-faint)' }}>
                 <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
               </svg>
@@ -469,7 +501,7 @@ function AdminInner() {
             </div>
           </header>
 
-          <div style={{ padding: '32px' }}>
+          <div className="admin-content" style={{ padding: '32px' }}>
 
             {/* DASHBOARD */}
             {view === 'dashboard' && (
@@ -637,7 +669,8 @@ function AdminInner() {
                       <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
                     </div>
                   ) : (
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '560px' }}>
                       <thead>
                         <tr>
                           <th style={thStyle}>Firma</th>
@@ -710,6 +743,7 @@ function AdminInner() {
                         ))}
                       </tbody>
                     </table>
+                    </div>
                   )}
                 </div>
               </>
@@ -785,8 +819,30 @@ function AdminInner() {
       </div>
 
       <style>{`
-        @media (max-width: 1024px) { .admin-layout { grid-template-columns: 1fr !important; } .stat-cards { grid-template-columns: 1fr 1fr !important; } }
-        @media (max-width: 560px)  { .stat-cards { grid-template-columns: 1fr !important; } }
+        @media (max-width: 1024px) {
+          .admin-layout       { grid-template-columns: 1fr !important; }
+          .stat-cards         { grid-template-columns: 1fr 1fr !important; }
+          .admin-sidebar      {
+            position: fixed !important;
+            top: 0 !important; left: 0 !important; bottom: 0 !important;
+            width: 280px !important;
+            height: 100vh !important;
+            transform: translateX(-100%);
+            transition: transform .25s ease;
+            z-index: 200;
+          }
+          .admin-sidebar-open { transform: translateX(0); }
+          .admin-sidebar-close { display: flex !important; }
+          .admin-menu-btn     { display: flex !important; }
+        }
+        @media (max-width: 560px) {
+          .stat-cards    { grid-template-columns: 1fr !important; }
+          .admin-header  { padding: 14px 16px !important; gap: 12px !important; }
+          .admin-header h1 { font-size: 18px !important; }
+          .admin-search  { width: 100% !important; margin-left: 0 !important; }
+          .admin-search input { width: 100% !important; box-sizing: border-box !important; }
+          .admin-content { padding: 16px !important; }
+        }
       `}</style>
     </>
   )
